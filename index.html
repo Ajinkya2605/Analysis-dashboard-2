@@ -1,0 +1,1362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SpiderAds — Live Board Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg:#0d0f14; --surface:#13161e; --surface2:#1a1e28; --border:#252933;
+  --text:#e8eaf0; --muted:#6b7280; --accent:#6366f1;
+  --red:#ef4444; --amber:#f59e0b; --green:#10b981; --blue:#3b82f6;
+  --teal:#14b8a6; --purple:#a855f7;
+  --font:'DM Sans',sans-serif; --mono:'DM Mono',monospace;
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+body { font-family:var(--font); background:var(--bg); color:var(--text); font-size:14px; line-height:1.6; min-height:100vh; }
+
+/* NAV */
+nav {
+  position:sticky; top:0; z-index:300;
+  background:rgba(13,15,20,.97); backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 32px; height:56px;
+}
+.nav-brand { font-weight:800; font-size:1.1rem; letter-spacing:-.4px; }
+.nav-brand em { color:var(--accent); font-style:normal; }
+.nav-right { display:flex; align-items:center; gap:10px; }
+.nav-links { display:flex; gap:4px; }
+.nav-links a { color:var(--muted); text-decoration:none; font-size:.78rem; font-weight:500; padding:5px 11px; border-radius:6px; transition:all .15s; }
+.nav-links a:hover { color:var(--text); background:var(--surface2); }
+.nav-status { font-size:.7rem; font-family:var(--mono); display:flex; align-items:center; gap:6px; }
+.sdot { width:7px; height:7px; border-radius:50%; background:var(--muted); flex-shrink:0; }
+.sdot.live { background:var(--green); box-shadow:0 0 6px rgba(16,185,129,.5); animation:pulse 2s infinite; }
+.sdot.err  { background:var(--red); }
+.sdot.busy { background:var(--amber); animation:pulse .9s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+.nav-btn { padding:5px 12px; background:transparent; border:1px solid var(--border); border-radius:6px; color:var(--muted); font-size:.72rem; font-family:var(--mono); cursor:pointer; transition:all .15s; }
+.nav-btn:hover { border-color:var(--accent); color:var(--accent); }
+
+/* LOADING BAR */
+.lb { height:2px; background:var(--border); overflow:hidden; }
+.lb-i { height:100%; width:0; background:linear-gradient(90deg,var(--accent),var(--purple)); transition:width .4s; }
+.lb-i.run { animation:lrun 1.5s ease-in-out infinite; width:35%!important; }
+@keyframes lrun { 0%{transform:translateX(-150%)} 100%{transform:translateX(400%)} }
+
+/* ══════════════════════════════════════
+   STEP 1 — CONNECT SCREEN
+══════════════════════════════════════ */
+.screen { min-height:calc(100vh - 58px); display:flex; align-items:center; justify-content:center; padding:32px 20px; }
+.card {
+  background:var(--surface); border:1px solid var(--border); border-radius:16px;
+  padding:44px 48px; width:100%; max-width:560px; position:relative; overflow:hidden;
+}
+.card::before {
+  content:''; position:absolute; inset:0;
+  background:radial-gradient(ellipse 500px 300px at 85% 15%, rgba(99,102,241,.07), transparent);
+  pointer-events:none;
+}
+.card-eyebrow { font-family:var(--mono); font-size:.67rem; color:var(--accent); letter-spacing:1.8px; text-transform:uppercase; margin-bottom:10px; }
+.card h2 { font-size:1.5rem; font-weight:700; letter-spacing:-.4px; margin-bottom:6px; }
+.card-sub { color:var(--muted); font-size:.83rem; margin-bottom:28px; line-height:1.65; }
+
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.form-row.single { grid-template-columns:1fr; }
+.fg { display:flex; flex-direction:column; gap:6px; margin-bottom:14px; }
+.fg:last-of-type { margin-bottom:0; }
+.lbl { font-size:.68rem; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.7px; font-family:var(--mono); }
+.inp {
+  width:100%; padding:10px 13px;
+  background:var(--surface2); border:1px solid var(--border); border-radius:8px;
+  color:var(--text); font-size:.84rem; font-family:var(--mono);
+  outline:none; transition:border-color .15s;
+}
+.inp:focus { border-color:var(--accent); }
+.inp::placeholder { color:var(--muted); }
+
+.btn-primary {
+  width:100%; padding:12px; margin-top:20px;
+  background:var(--accent); border:none; border-radius:8px;
+  color:#fff; font-size:.9rem; font-weight:600; font-family:var(--font);
+  cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;
+  transition:opacity .15s;
+}
+.btn-primary:hover { opacity:.87; }
+.btn-primary:disabled { opacity:.4; cursor:not-allowed; }
+.conn-hint { font-size:.7rem; color:var(--muted); margin-top:14px; line-height:1.8; text-align:center; }
+.conn-hint a { color:var(--accent); }
+.err-box { background:rgba(239,68,68,.1); border:1px solid rgba(239,68,68,.25); border-radius:8px; padding:10px 14px; font-size:.77rem; color:var(--red); margin-top:12px; display:none; }
+
+/* ══════════════════════════════════════
+   STEP 2 — DASHBOARD
+══════════════════════════════════════ */
+
+/* Top bar — board + date controls */
+.dash-header {
+  background:var(--surface); border-bottom:1px solid var(--border);
+  padding:18px 32px;
+}
+.dash-header-inner {
+  max-width:1500px; margin:0 auto;
+  display:flex; align-items:flex-end; gap:20px; flex-wrap:wrap;
+}
+.dh-group { display:flex; flex-direction:column; gap:6px; }
+.dh-lbl { font-size:.65rem; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.7px; font-family:var(--mono); white-space:nowrap; }
+.dh-select {
+  padding:8px 32px 8px 12px; min-width:240px;
+  background:var(--surface2); border:1px solid var(--border); border-radius:8px;
+  color:var(--text); font-size:.82rem; font-family:var(--mono);
+  outline:none; cursor:pointer; transition:border-color .15s;
+  appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' fill='%236b7280' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right 10px center;
+}
+.dh-select:focus { border-color:var(--accent); }
+.dh-select option { background:var(--surface2); }
+
+.date-range-group { display:flex; flex-direction:column; gap:6px; }
+.date-quick { display:flex; gap:5px; }
+.bq { padding:5px 10px; background:var(--surface2); border:1px solid var(--border); border-radius:6px; color:var(--muted); font-size:.7rem; font-family:var(--mono); cursor:pointer; transition:all .15s; white-space:nowrap; }
+.bq.on, .bq:hover { background:var(--accent); border-color:var(--accent); color:#fff; }
+.date-inputs { display:flex; gap:8px; align-items:center; }
+.date-inp { padding:8px 11px; background:var(--surface2); border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:.78rem; font-family:var(--mono); outline:none; cursor:pointer; transition:border-color .15s; }
+.date-inp:focus { border-color:var(--accent); }
+.date-inp::-webkit-calendar-picker-indicator { filter:invert(1) opacity(.4); cursor:pointer; }
+.date-sep { color:var(--muted); font-size:.8rem; }
+
+.limit-group { display:flex; flex-direction:column; gap:6px; }
+.limit-inp { width:100px; padding:8px 11px; background:var(--surface2); border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:.78rem; font-family:var(--mono); outline:none; text-align:center; }
+.limit-inp:focus { border-color:var(--accent); }
+.limit-hint { font-size:.61rem; color:var(--muted); font-family:var(--mono); }
+
+.btn-run {
+  padding:9px 22px; background:var(--accent); border:none; border-radius:8px;
+  color:#fff; font-size:.85rem; font-weight:600; font-family:var(--font);
+  cursor:pointer; display:flex; align-items:center; gap:7px;
+  white-space:nowrap; transition:opacity .15s; align-self:flex-end;
+}
+.btn-run:hover { opacity:.85; }
+.btn-run:disabled { opacity:.4; cursor:not-allowed; }
+.btn-disc { padding:9px 14px; background:transparent; border:1px solid var(--border); border-radius:8px; color:var(--muted); font-size:.78rem; font-family:var(--mono); cursor:pointer; transition:all .15s; align-self:flex-end; white-space:nowrap; }
+.btn-disc:hover { border-color:var(--red); color:var(--red); }
+
+/* err banner */
+.dash-err { background:rgba(239,68,68,.1); border:1px solid rgba(239,68,68,.25); border-radius:8px; padding:10px 16px; font-size:.78rem; color:var(--red); margin:12px 32px 0; max-width:1500px; display:none; }
+
+/* PROGRESS OVERLAY */
+.prog-ov {
+  display:none; position:fixed; inset:0;
+  background:rgba(13,15,20,.94); backdrop-filter:blur(12px);
+  z-index:500; flex-direction:column; align-items:center; justify-content:center; gap:16px;
+}
+.prog-ov.on { display:flex; }
+.prog-title { font-size:1rem; font-weight:700; }
+.prog-sub { font-size:.8rem; color:var(--muted); text-align:center; max-width:380px; line-height:1.65; }
+.prog-track { width:320px; height:4px; background:var(--border); border-radius:2px; overflow:hidden; }
+.prog-fill { height:100%; width:0; background:linear-gradient(90deg,var(--accent),var(--purple)); border-radius:2px; transition:width .4s; }
+.prog-step { font-family:var(--mono); font-size:.68rem; color:var(--muted); }
+.prog-step b { color:var(--accent); }
+.prog-log { font-family:var(--mono); font-size:.66rem; color:var(--muted); text-align:center; min-height:16px; }
+
+/* KPI STRIP */
+.kpi-strip { display:grid; grid-template-columns:repeat(8,1fr); border-bottom:1px solid var(--border); }
+.kpi-item { padding:16px 12px; border-right:1px solid var(--border); text-align:center; }
+.kpi-item:last-child { border-right:none; }
+.kv { font-size:1.55rem; font-weight:700; letter-spacing:-1px; line-height:1; font-family:var(--mono); }
+.kv.acc{color:var(--accent);} .kv.red{color:var(--red);} .kv.amb{color:var(--amber);}
+.kv.grn{color:var(--green);} .kv.blu{color:var(--blue);} .kv.pur{color:var(--purple);}
+.kl { font-size:.59rem; color:var(--muted); margin-top:4px; text-transform:uppercase; letter-spacing:.8px; }
+
+/* MAIN */
+.main { max-width:1500px; margin:0 auto; padding:26px 30px; }
+.sec-lbl { font-family:var(--mono); font-size:.63rem; color:var(--accent); text-transform:uppercase; letter-spacing:1.5px; margin-bottom:10px; }
+.sec-title { font-size:1rem; font-weight:700; letter-spacing:-.3px; margin-bottom:16px; }
+
+/* CHARTS */
+.charts-row { display:grid; grid-template-columns:1.5fr 1fr; gap:14px; margin-bottom:26px; }
+.cc { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:18px 20px; }
+.cc h3 { font-size:.71rem; font-weight:600; color:var(--muted); margin-bottom:12px; text-transform:uppercase; letter-spacing:.6px; font-family:var(--mono); }
+.chart-hint { font-size:.63rem; color:var(--accent); font-family:var(--mono); margin-top:7px; }
+
+/* INSIGHTS */
+.ins-section { margin-bottom:26px; }
+.ins-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:11px; }
+.ins-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:14px 16px; }
+.ins-card.p1 { border-left:3px solid var(--red); }
+.ins-card.p2 { border-left:3px solid var(--amber); }
+.ins-card.p3 { border-left:3px solid var(--blue); }
+.ins-card.p4 { border-left:3px solid var(--green); }
+.ins-lbl { font-size:.61rem; font-family:var(--mono); font-weight:600; text-transform:uppercase; letter-spacing:.8px; margin-bottom:5px; }
+.ins-card.p1 .ins-lbl{color:var(--red);} .ins-card.p2 .ins-lbl{color:var(--amber);}
+.ins-card.p3 .ins-lbl{color:var(--blue);} .ins-card.p4 .ins-lbl{color:var(--green);}
+.ins-txt { font-size:.78rem; line-height:1.65; color:var(--text); }
+
+/* ACCORDION */
+.drill { margin-bottom:26px; }
+.cat-list { display:flex; flex-direction:column; gap:7px; }
+.cat-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; transition:border-color .15s; }
+.cat-card.open { border-color:var(--accent); }
+.cat-trig { display:flex; align-items:center; gap:13px; padding:13px 18px; cursor:pointer; user-select:none; transition:background .12s; }
+.cat-trig:hover { background:var(--surface2); }
+.cat-bar { width:4px; height:30px; border-radius:2px; flex-shrink:0; }
+.cat-inf { flex:1; min-width:0; }
+.cat-nm { font-weight:600; font-size:.86rem; }
+.cat-sub { font-size:.69rem; color:var(--muted); margin-top:1px; }
+.cat-pills { display:flex; gap:5px; flex-wrap:wrap; align-items:center; flex-shrink:0; }
+.pill { font-size:.61rem; font-family:var(--mono); padding:2px 7px; border-radius:20px; border:1px solid var(--border); color:var(--muted); white-space:nowrap; }
+.pill.op { background:rgba(239,68,68,.1); color:var(--red); border-color:rgba(239,68,68,.2); }
+.pill.bg { background:rgba(245,158,11,.08); color:var(--amber); border-color:rgba(245,158,11,.15); }
+.cat-chev { color:var(--muted); font-size:.62rem; transition:transform .2s; width:14px; text-align:center; flex-shrink:0; }
+.cat-card.open .cat-chev { transform:rotate(90deg); }
+.cat-panel { display:none; border-top:1px solid var(--border); }
+.cat-card.open .cat-panel { display:block; }
+.cat-pattern { padding:11px 17px; background:rgba(99,102,241,.04); border-bottom:1px solid var(--border); font-size:.76rem; color:var(--muted); line-height:1.6; }
+.cat-pattern b { color:var(--text); }
+.cat-pattern-lbl { font-family:var(--mono); font-size:.6rem; color:var(--accent); text-transform:uppercase; letter-spacing:.8px; margin-bottom:3px; }
+
+/* SUB-AREAS */
+.sub-areas { padding:10px 14px 6px; border-bottom:1px solid var(--border); display:flex; flex-direction:column; gap:5px; }
+.sub-area-row {
+  background:var(--surface2); border:1px solid var(--border); border-radius:8px;
+  overflow:hidden; transition:border-color .15s;
+}
+.sub-area-row.open { border-color:rgba(99,102,241,.4); }
+.sub-trig {
+  display:flex; align-items:center; gap:10px; padding:9px 13px;
+  cursor:pointer; user-select:none; transition:background .1s;
+}
+.sub-trig:hover { background:rgba(255,255,255,.03); }
+.sub-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+.sub-nm { font-size:.8rem; font-weight:600; flex:1; min-width:0; }
+.sub-pills { display:flex; gap:4px; flex-wrap:wrap; flex-shrink:0; }
+.sub-pill { font-size:.59rem; font-family:var(--mono); padding:2px 6px; border-radius:12px; border:1px solid var(--border); color:var(--muted); white-space:nowrap; }
+.sub-pill.op { background:rgba(239,68,68,.1); color:var(--red); border-color:rgba(239,68,68,.2); }
+.sub-pill.bg { background:rgba(245,158,11,.08); color:var(--amber); border-color:rgba(245,158,11,.15); }
+.sub-chev { color:var(--muted); font-size:.58rem; transition:transform .2s; width:12px; text-align:center; flex-shrink:0; }
+.sub-area-row.open .sub-chev { transform:rotate(90deg); }
+.sub-panel { display:none; border-top:1px solid var(--border); }
+.sub-area-row.open .sub-panel { display:block; }
+
+/* TICKETS */
+.t-list { padding:5px 0; }
+.t-row { display:flex; align-items:baseline; gap:10px; padding:6px 17px; transition:background .1s; }
+.t-row:hover { background:rgba(255,255,255,.02); }
+.tid { font-family:var(--mono); font-size:.68rem; color:var(--accent); text-decoration:none; white-space:nowrap; }
+.tid:hover { text-decoration:underline; }
+.ttl { font-size:.75rem; flex:1; min-width:0; }
+.ttype { font-size:.63rem; color:var(--muted); white-space:nowrap; }
+.tst { font-size:.63rem; font-weight:600; white-space:nowrap; font-family:var(--mono); }
+.sc{color:var(--green);} .so{color:var(--red);} .sa{color:var(--blue);} .sr{color:var(--teal);} .st{color:var(--amber);}
+.dot-o { width:5px; height:5px; border-radius:50%; background:var(--red); flex-shrink:0; margin-top:6px; }
+.dot-c { width:5px; height:5px; border-radius:50%; background:var(--border); flex-shrink:0; margin-top:6px; }
+
+.empty { text-align:center; padding:50px 20px; color:var(--muted); }
+.empty .ei { font-size:2rem; margin-bottom:10px; opacity:.35; }
+.empty p { font-size:.82rem; }
+
+/* MODAL */
+.mod-ov { display:none; position:fixed; inset:0; background:rgba(0,0,0,.7); backdrop-filter:blur(5px); z-index:600; align-items:flex-start; justify-content:center; padding:36px 20px; overflow-y:auto; }
+.mod-ov.on { display:flex; }
+.modal { background:var(--surface); border:1px solid var(--border); border-radius:16px; width:100%; max-width:860px; overflow:hidden; animation:mIn .18s ease; margin:auto; }
+@keyframes mIn { from{opacity:0;transform:translateY(-12px) scale(.98)} to{opacity:1;transform:none} }
+.mhdr { display:flex; align-items:center; gap:12px; padding:14px 18px; border-bottom:1px solid var(--border); position:sticky; top:0; background:var(--surface); z-index:1; }
+.mbar { width:5px; height:34px; border-radius:3px; flex-shrink:0; }
+.mtit { flex:1; }
+.mtit h2 { font-size:.9rem; font-weight:700; }
+.mtit p { font-size:.68rem; color:var(--muted); font-family:var(--mono); margin-top:2px; }
+.mclose { width:26px; height:26px; border-radius:6px; border:1px solid var(--border); background:transparent; color:var(--muted); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .1s; }
+.mclose:hover { background:var(--surface2); color:var(--text); }
+.mbody { padding:0; max-height:72vh; overflow-y:auto; }
+
+/* HOW DRAWER */
+.how-ov { display:none; position:fixed; inset:0; background:rgba(0,0,0,.72); backdrop-filter:blur(6px); z-index:700; justify-content:flex-end; }
+.how-ov.on { display:flex; }
+.how-drawer { background:var(--surface); border-left:1px solid var(--border); width:100%; max-width:620px; height:100vh; overflow-y:auto; animation:dIn .2s ease; }
+@keyframes dIn { from{transform:translateX(100%)} to{transform:none} }
+.dhdr { display:flex; align-items:center; justify-content:space-between; padding:16px 24px; border-bottom:1px solid var(--border); position:sticky; top:0; background:var(--surface); z-index:1; }
+.dhdr h2 { font-size:.92rem; font-weight:700; }
+.dclose { width:27px; height:27px; border-radius:7px; border:1px solid var(--border); background:transparent; color:var(--muted); cursor:pointer; display:flex; align-items:center; justify-content:center; }
+.dclose:hover { background:var(--surface2); }
+.dbody { padding:20px 24px; }
+.dsec { margin-bottom:22px; }
+.dsec h3 { font-size:.74rem; font-weight:700; color:var(--accent); text-transform:uppercase; letter-spacing:.8px; font-family:var(--mono); margin-bottom:8px; }
+.dsec p { font-size:.79rem; color:var(--muted); line-height:1.75; margin-bottom:7px; }
+.dsec p b { color:var(--text); }
+.dsec ul { padding-left:16px; margin:5px 0; }
+.dsec li { font-size:.77rem; color:var(--muted); line-height:1.9; }
+.dsec li b { color:var(--text); }
+.dsec li code { font-family:var(--mono); font-size:.7rem; color:var(--accent); background:rgba(99,102,241,.1); padding:1px 5px; border-radius:3px; }
+.hd { border:none; border-top:1px solid var(--border); margin:18px 0; }
+.cblk { background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:12px 14px; font-family:var(--mono); font-size:.7rem; line-height:1.75; overflow-x:auto; white-space:pre; margin:8px 0; }
+.cm{color:var(--muted);} .ck{color:var(--accent);} .cv{color:var(--green);}
+.rule-tbl { width:100%; border-collapse:collapse; font-size:.74rem; margin-top:8px; }
+.rule-tbl th { text-align:left; padding:6px 10px; border-bottom:1px solid var(--border); font-family:var(--mono); font-size:.65rem; color:var(--muted); text-transform:uppercase; }
+.rule-tbl td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top; }
+.rule-tbl td:first-child { font-weight:600; white-space:nowrap; }
+.rule-tbl td:last-child { font-family:var(--mono); font-size:.68rem; color:var(--muted); line-height:1.6; }
+.cdot { display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:6px; vertical-align:middle; }
+
+.spinner { width:14px; height:14px; border:2px solid rgba(255,255,255,.25); border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite; }
+@keyframes spin { to{transform:rotate(360deg)} }
+.sp-sm { width:10px; height:10px; border-width:1.5px; border-color:rgba(99,102,241,.2); border-top-color:var(--accent); }
+
+footer { text-align:center; color:var(--muted); font-size:.64rem; font-family:var(--mono); padding:20px; border-top:1px solid var(--border); }
+.hidden { display:none!important; }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-brand">Spider<em>Ads</em></div>
+  <div class="nav-links hidden" id="navLinks">
+    <a href="#kpis">Overview</a>
+    <a href="#insights">Insights</a>
+    <a href="#drilldown">Drill-down</a>
+  </div>
+  <div class="nav-right">
+    <button class="nav-btn" onclick="openHow()">⚙ How it works</button>
+    <div class="nav-status">
+      <div class="sdot" id="sDot"></div>
+      <span id="sTxt" style="color:var(--muted)">Not connected</span>
+    </div>
+  </div>
+</nav>
+<div class="lb"><div class="lb-i" id="lb"></div></div>
+
+<!-- ══ STEP 1: CONNECT ══ -->
+<div class="screen" id="screenConnect">
+  <div class="card">
+    <div class="card-eyebrow">Azure DevOps · Step 1 of 2</div>
+    <h2>Connect to Your Project</h2>
+    <p class="card-sub">Enter your Azure DevOps credentials. After connecting you'll choose your board, date range, and run the analysis — all on one screen.</p>
+
+    <div class="form-row">
+      <div class="fg">
+        <label class="lbl">Organisation</label>
+        <input class="inp" id="orgInp" type="text" placeholder="e.g. bifirm" value="bifirm">
+      </div>
+      <div class="fg">
+        <label class="lbl">Project</label>
+        <input class="inp" id="projInp" type="text" placeholder="e.g. SpiderAds" value="SpiderAds">
+      </div>
+    </div>
+
+    <div class="fg" style="margin-top:6px">
+      <label class="lbl">Personal Access Token (PAT)</label>
+      <input class="inp" id="patInp" type="password" placeholder="Paste your PAT — scope: Work Items: Read">
+    </div>
+
+    <button class="btn-primary" id="connectBtn" onclick="handleConnect()">
+      <span id="connectTxt">Connect &amp; Fetch Boards</span>
+      <div class="spinner hidden" id="connectSpin"></div>
+    </button>
+    <div class="err-box" id="connectErr"></div>
+    <p class="conn-hint">
+      Azure DevOps → Profile → <b>Personal Access Tokens</b> → New Token → scope: <b>Work Items: Read</b><br>
+      <span style="color:var(--accent); cursor:pointer" onclick="openHow()">⚙ How does categorisation work?</span>
+    </p>
+  </div>
+</div>
+
+<!-- ══ STEP 2: DASHBOARD ══ -->
+<div id="screenDash" class="hidden">
+
+  <!-- Controls bar -->
+  <div class="dash-header">
+    <div class="dash-header-inner">
+
+      <!-- Board selector -->
+      <div class="dh-group">
+        <span class="dh-lbl">Board / Area Path</span>
+        <select class="dh-select" id="boardSel">
+          <option value="">— All boards (entire project) —</option>
+        </select>
+      </div>
+
+      <!-- Date range -->
+      <div class="date-range-group">
+        <span class="dh-lbl">Date Range</span>
+        <div class="date-quick">
+          <button class="bq" onclick="setQ(30,this)">30d</button>
+          <button class="bq" onclick="setQ(60,this)">60d</button>
+          <button class="bq on" onclick="setQ(107,this)">3.5m</button>
+          <button class="bq" onclick="setQ(180,this)">6m</button>
+          <button class="bq" onclick="setQ(365,this)">1yr</button>
+        </div>
+        <div class="date-inputs">
+          <input type="date" class="date-inp" id="dateFrom">
+          <span class="date-sep">→</span>
+          <input type="date" class="date-inp" id="dateTo">
+        </div>
+      </div>
+
+      <!-- Max tickets -->
+      <div class="limit-group">
+        <span class="dh-lbl">Max Tickets</span>
+        <input class="limit-inp" id="limitInp" type="number" value="2000" min="100" max="50000" step="100">
+        <span class="limit-hint">Higher = slower</span>
+      </div>
+
+      <!-- Actions -->
+      <button class="btn-run" id="runBtn" onclick="runAnalysis()">
+        <span id="runTxt">Analyse Board</span>
+        <div class="spinner hidden" id="runSpin"></div>
+      </button>
+      <button class="btn-disc" onclick="disconnect()">← Disconnect</button>
+
+    </div>
+    <div class="dash-err hidden" id="dashErr"></div>
+  </div>
+
+  <!-- Progress overlay -->
+  <div class="prog-ov" id="progOv">
+    <div class="prog-title" id="progTitle">Fetching tickets…</div>
+    <div class="prog-sub" id="progSub">Connecting to Azure DevOps</div>
+    <div class="prog-track"><div class="prog-fill" id="progFill"></div></div>
+    <div class="prog-step" id="progStep">Step <b>1</b> of 3</div>
+    <div class="prog-log" id="progLog"></div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-strip" id="kpis">
+    <div class="kpi-item"><div class="kv acc" id="kTotal">—</div><div class="kl">Total Tickets</div></div>
+    <div class="kpi-item"><div class="kv red"  id="kBugs">—</div><div class="kl">Bugs</div></div>
+    <div class="kpi-item"><div class="kv amb"  id="kManual">—</div><div class="kl">Manual Ops</div></div>
+    <div class="kpi-item"><div class="kv red"  id="kOpen">—</div><div class="kl">Still Open</div></div>
+    <div class="kpi-item"><div class="kv grn"  id="kClosed">—</div><div class="kl">Resolved</div></div>
+    <div class="kpi-item"><div class="kv blu"  id="kCats">—</div><div class="kl">Categories</div></div>
+    <div class="kpi-item"><div class="kv"      id="kAvg">—</div><div class="kl">Avg Days Close</div></div>
+    <div class="kpi-item"><div class="kv pur"  id="kPages">—</div><div class="kl">Pages Fetched</div></div>
+  </div>
+
+  <div class="main">
+
+    <div class="charts-row">
+      <div class="cc">
+        <h3>Volume by Category</h3>
+        <canvas id="catChart" height="300"></canvas>
+        <div class="chart-hint">↑ Click any bar to see all tickets in that category</div>
+      </div>
+      <div class="cc">
+        <h3>Open vs Closed by Category</h3>
+        <canvas id="openChart" height="300"></canvas>
+      </div>
+    </div>
+
+    <div class="ins-section" id="insights">
+      <div class="sec-lbl">Pattern Analysis</div>
+      <div class="sec-title">Key Findings</div>
+      <div class="ins-grid" id="insGrid"></div>
+    </div>
+
+    <div class="drill" id="drilldown">
+      <div class="sec-lbl">Deep Dive</div>
+      <div class="sec-title">All Categories &amp; Tickets</div>
+      <div class="cat-list" id="catList">
+        <div class="empty"><div class="ei">📋</div><p>Select your settings above and click Analyse Board.</p></div>
+      </div>
+    </div>
+
+  </div>
+  <footer id="footerBar">SpiderAds · Live Board Dashboard</footer>
+</div>
+
+<!-- MODAL -->
+<div class="mod-ov" id="modOv" onclick="closeMod(event)">
+  <div class="modal">
+    <div class="mhdr">
+      <div class="mbar" id="mBar"></div>
+      <div class="mtit"><h2 id="mTitle"></h2><p id="mMeta"></p></div>
+      <button class="mclose" onclick="closeModDirect()">✕</button>
+    </div>
+    <div class="mbody" id="mBody"></div>
+  </div>
+</div>
+
+<!-- HOW DRAWER -->
+<div class="how-ov" id="howOv" onclick="closeHowOv(event)">
+  <div class="how-drawer">
+    <div class="dhdr"><h2>⚙ How the Dashboard Works</h2><button class="dclose" onclick="closeHow()">✕</button></div>
+    <div class="dbody">
+
+      <div class="dsec">
+        <h3>1 · Board List — Dynamically Fetched</h3>
+        <p>On connect, the dashboard calls the <b>Azure DevOps Classification Nodes API</b> at depth 10, returning your full area path tree. Any new board added in future appears automatically.</p>
+        <div class="cblk"><span class="cm">GET /wit/classificationnodes/areas?$depth=10&api-version=7.1</span></div>
+      </div>
+
+      <hr class="hd">
+      <div class="dsec">
+        <h3>2 · No 500-Ticket Limit</h3>
+        <p>Standard WIQL caps at 500. This dashboard uses <b>continuation tokens</b> to page through all results up to your chosen max.</p>
+        <div class="cblk"><span class="ck">POST</span> /wit/wiql?api-version=7.1
+<span class="cm">-- keep fetching while continuationToken exists:</span>
+<span class="ck">POST</span> /wit/wiql?continuationToken=<span class="cv">{token}</span>&api-version=7.1</div>
+      </div>
+
+      <hr class="hd">
+      <div class="dsec">
+        <h3>3 · Board-Aware Categorisation</h3>
+        <p>Tickets are categorised using <b>title + description</b> keyword rules. What makes this board-aware is that the category list is <b>filtered to only show categories that actually appear in the data</b> — so a Features board will only show feature-relevant categories, while a Maintenance board shows maintenance-specific ones.</p>
+        <p>Rules are checked top to bottom. First match wins. The full rule set:</p>
+        <table class="rule-tbl">
+          <thead><tr><th>Category</th><th>Keywords matched in title + description</th></tr></thead>
+          <tbody id="ruleTbody"></tbody>
+        </table>
+      </div>
+
+      <hr class="hd">
+      <div class="dsec">
+        <h3>4 · Auto-Generated Insights</h3>
+        <p>After categorisation the dashboard computes pattern findings from the actual numbers — highest volume, worst open rate, highest bug rate, manual ops burden, and resolution speed. No external API needed.</p>
+      </div>
+
+      <hr class="hd">
+      <div class="dsec">
+        <h3>5 · KPI Definitions</h3>
+        <ul>
+          <li><b>Open</b> — State not in: Closed, Resolved, Done</li>
+          <li><b>Bugs</b> — Work Item Type contains Bug, Spider bug, or Defect</li>
+          <li><b>Manual Ops</b> — Type is Spindling or Manual</li>
+          <li><b>Avg Days to Close</b> — mean of ClosedDate − ActivatedDate (falls back to CreatedDate)</li>
+          <li><b>Pages Fetched</b> — WIQL pagination calls made</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ══════════════════════════════════════════════════
+// CATEGORISATION RULES
+// All 18 rules checked against title + description.
+// First match wins. Board-aware = only categories
+// present in the actual data are shown.
+// ══════════════════════════════════════════════════
+const RULES = [
+  { name:'Spider & Data Source',      color:'#6366f1', kw:/spider|datasource|data.?source|spindling|crawl|rootlink/ },
+  { name:'LinkedIn',                  color:'#0077b5', kw:/linkedin/ },
+  { name:'Meta \/ Facebook',          color:'#1877f2', kw:/\bmeta\b|facebook|fb.?page|\bcarousel\b/ },
+  { name:'YouTube',                   color:'#ff4444', kw:/youtube|\byt\b|yt-/ },
+  { name:'PinMeTo',                   color:'#e11d48', kw:/pinmeto|\bpmt\b/ },
+  { name:'BidTheatre',                color:'#64748b', kw:/bidtheatre/ },
+  { name:'Invoicing & Billing',       color:'#fbbf24', kw:/invoice|line.?item|billing|budget.?period|budgetperiod|fakturering|uninvoiced|monthly.?arrears|negative.?line|billing.?type/ },
+  { name:'Subscription Management',  color:'#8b5cf6', kw:/subscription|end.?campaign|cancel.?subscription/ },
+  { name:'Campaign & Ad Management', color:'#f97316', kw:/campaign|ad.?set|adcreative|\bno.?ads?\b|failed.?to.?create|always.?on|autoads|on.?demand|veckoboost|\bbatch\b/ },
+  { name:'Reporting & Analytics',     color:'#10b981', kw:/\breport\b|statistic|telemetri|overdelivery|insights|reach.*frequency|partner.?report/ },
+  { name:'API & Integration',         color:'#06b6d4', kw:/\bapi\b|update.?linkedin|update.?meta|update.?google.?ads|influeris|integration/ },
+  { name:'Frontend & UI',             color:'#14b8a6', kw:/preview|frontend|\blisting\b|\brender\b|customer.?view|campaign.?view|campaign.?page|\bsorting\b|orderpage|vite|language.?config|ui.?bug|user.?interface/ },
+  { name:'Infrastructure & Platform', color:'#6b7280', kw:/deployment|pipeline|\bstaging\b|azure.?function|\bgateway\b|rate.?limit|\bblob\b|pdf.?render|asset.?processing|auto.?mapper|infrastructure/ },
+  { name:'Prospect & Order Flow',     color:'#3b82f6', kw:/\border\b|weborder|webshop|\bvisma\b|orderlink|\bprospect\b|duplicate|reseller|trusted.?user|jobbrella|\btenant\b/ },
+  { name:'Creatives & Templates',     color:'#d97706', kw:/\btemplate\b|\bsplash\b|creative|\bvideo\b|\bimage\b|thumbnail|display.?template|ad.?template|brand.?channel/ },
+  { name:'Email & Notifications',     color:'#ec4899', kw:/\bemail\b|\bsms\b|notification|errormessage|mailslurp/ },
+  { name:'Access & Permissions',      color:'#fb923c', kw:/\bpermission\b|403|\baccess\b.{0,20}denied|unauthorized/ },
+  { name:'Feature Request',           color:'#a855f7', kw:/feature.?request|enhancement|new.?feature|user.?story|improvement/ },
+  { name:'Bug \/ Defect',             color:'#ef4444', kw:/\bbug\b|\bdefect\b|crash|exception|error|broken|fix/ },
+  { name:'Performance',               color:'#84cc16', kw:/performance|slow|timeout|latency|memory|cpu|load.?time/ },
+  { name:'Security',                  color:'#f43f5e', kw:/security|vulnerability|auth|oauth|ssl|tls|certificate|xss|injection/ },
+  { name:'Documentation',             color:'#94a3b8', kw:/documentation|docs\b|readme|wiki|guide|howto/ },
+  { name:'Other',                     color:'#374151', kw:null },
+];
+
+// ── ENHANCED CATEGORISATION ENGINE ──────────────────
+// Priority order:
+//   1. WorkItemType pre-filter (score 10) — highest authority
+//   2. System.Tags signal     (score 5)
+//   3. Title keyword match    (score 3)
+//   4. Description keyword match (score 1)
+// All rules are scored; highest score wins. No first-match-wins.
+// ─────────────────────────────────────────────────────
+
+const TAG_MAP = [
+  { kw:/spider|datasource|crawl/,   cat:'Spider & Data Source' },
+  { kw:/linkedin/,                  cat:'LinkedIn' },
+  { kw:/\bmeta\b|facebook/,         cat:'Meta / Facebook' },
+  { kw:/youtube/,                   cat:'YouTube' },
+  { kw:/pinmeto|pmt/,               cat:'PinMeTo' },
+  { kw:/bidtheatre/,                cat:'BidTheatre' },
+  { kw:/invoice|billing/,           cat:'Invoicing & Billing' },
+  { kw:/subscription/,              cat:'Subscription Management' },
+  { kw:/campaign|autoads/,          cat:'Campaign & Ad Management' },
+  { kw:/report|analytics/,          cat:'Reporting & Analytics' },
+  { kw:/\bapi\b|integration/,       cat:'API & Integration' },
+  { kw:/frontend|ui/,               cat:'Frontend & UI' },
+  { kw:/infrastructure|infra|deploy/,cat:'Infrastructure & Platform' },
+  { kw:/order|prospect/,            cat:'Prospect & Order Flow' },
+  { kw:/creative|template/,         cat:'Creatives & Templates' },
+  { kw:/email|notification/,        cat:'Email & Notifications' },
+  { kw:/permission|access/,         cat:'Access & Permissions' },
+  { kw:/\bbug\b|defect/,            cat:'Bug / Defect' },
+  { kw:/performance/,               cat:'Performance' },
+  { kw:/security/,                  cat:'Security' },
+];
+
+function categorize(title, desc, type, tags) {
+  const wType = (type||'').toLowerCase().trim();
+
+  // ── Priority 1: WorkItemType pre-filter ─────────────
+  // Spindling = data source creation/setup operation
+  if (wType === 'spindling') {
+    return 'Spider & Data Source';
+  }
+  // Spider Bug = a bug found specifically in the spider/data source
+  if (wType === 'spider bug') {
+    return 'Bug / Defect';
+  }
+
+  // ── Priority 2: Tags signal ──────────────────────────
+  if (tags) {
+    const tl = tags.toLowerCase();
+    for (const entry of TAG_MAP) {
+      if (entry.kw.test(tl)) return entry.cat;
+    }
+  }
+
+  // ── Priority 3 & 4: Score every RULE ────────────────
+  const titleLower = (title||'').toLowerCase();
+  const descLower  = (desc ||'').toLowerCase();
+  const scores     = {};
+
+  for (const r of RULES) {
+    if (!r.kw) continue;
+    let score = 0;
+    if (r.kw.test(titleLower)) score += 3;  // title match = 3pts
+    if (r.kw.test(descLower))  score += 1;  // desc  match = 1pt
+    if (score > 0) scores[r.name] = (scores[r.name]||0) + score;
+  }
+
+  const ranked = Object.entries(scores).sort((a,b) => b[1]-a[1]);
+  if (ranked.length) return ranked[0][0];
+
+  return 'Other';
+}
+
+function catColor(name) {
+  return (RULES.find(r=>r.name===name)||{color:'#6366f1'}).color;
+}
+
+// ══════════════════════════════════════════════════
+// SUB-AREA RULES
+// For each category, a prioritised list of sub-areas.
+// Each sub-area matches against title + description.
+// First match wins. 'Other' is the fallback per category.
+// ══════════════════════════════════════════════════
+const SUB_RULES = {
+  'Spider & Data Source': [
+    { name:'Spider Down / Unreachable',       kw:/spider.{0,20}down|spider.{0,20}unreachable|spider.{0,20}not.{0,10}work|spider.{0,20}fail|spider.{0,20}broken|spiders? down/ },
+    { name:'Wrong / Incomplete Data Fetched', kw:/wrong.{0,20}data|incomplete.{0,20}data|not.{0,20}fetch|incorrect.{0,20}data|missing.{0,20}data|empty.{0,20}data|not.{0,20}crawl|not.{0,20}collect|fetch.{0,20}fail|fetch.{0,20}wrong/ },
+    { name:'Datasource Empty / Stale',        kw:/datasource.{0,20}empty|data.?source.{0,20}empty|datasource.{0,20}stale|no.{0,20}data.{0,20}source|empty.{0,20}datasource|stale.{0,20}data/ },
+    { name:'Spider Config / Rule Tuning',     kw:/spider.{0,20}adjust|spider.{0,20}config|spider.{0,20}rule|adjust.{0,20}spider|spindling|update.{0,20}datasource|datasource.{0,20}update|change.{0,20}datasource/ },
+    { name:'Pipeline / Datasource Failure',   kw:/pipeline.{0,20}fail|datasource.{0,20}fail|campaign.{0,20}fail|fail.{0,20}creat|circuit.?breaker/ },
+    { name:'Prospect Source Issues',          kw:/prospect.?source/ },
+  ],
+  'LinkedIn': [
+    { name:'No Ads / Silent Delivery Failure', kw:/no.{0,10}ad|no.{0,10}creative|not.{0,20}deliver|silent.{0,20}fail|no.{0,15}campaign|campaign.{0,20}not.{0,20}creat/ },
+    { name:'Geo / Targeting Configuration',    kw:/geo|target|geotarget|cpm|country.{0,20}level|location|reach/ },
+    { name:'API Version / Compatibility',      kw:/api.{0,20}version|api.{0,20}update|202\d|marketing.?api|argumentnull|null.{0,20}element/ },
+    { name:'Campaign Duplication',             kw:/duplicate|double.{0,20}campaign|duplicate.{0,20}campaign/ },
+    { name:'Underdelivery / Performance',      kw:/underdeliver|under.{0,20}deliver|low.{0,20}deliver|low.{0,20}reach|poor.{0,20}performance/ },
+    { name:'Statistics / Analytics',           kw:/statistic|analytic|report|impression|click/ },
+  ],
+  'Meta / Facebook': [
+    { name:'No Ads / Ad Creation Failure',  kw:/no.{0,10}ad|adcreative|not.{0,20}creat|creation.{0,20}fail|no.{0,20}creative/ },
+    { name:'Page Access / Permissions',     kw:/page.{0,20}access|permission|403|pending.{0,20}access|fb.{0,20}page/ },
+    { name:'Billing Type Misconfiguration', kw:/billing.{0,20}type|billing.{0,20}config|not.{0,20}configur/ },
+    { name:'API Version / Performance',     kw:/api.{0,20}version|api.{0,20}update|v\d{2}|marketing.?api|laggy|rate.{0,10}limit/ },
+    { name:'Video / Carousel Issues',       kw:/video|carousel|thumbnail|black.{0,10}thumb|single.{0,10}media/ },
+  ],
+  'Invoicing & Billing': [
+    { name:'Line Item Not Created',          kw:/line.?item.{0,30}not.{0,10}creat|no.{0,10}line.?item|missing.{0,10}line.?item|line.?item.{0,20}missing/ },
+    { name:'Incorrect / Duplicate Items',    kw:/incorrect.{0,20}line|duplicate.{0,20}line|wrong.{0,20}amount|duplicate.{0,20}item|incorrect.{0,20}amount|over.{0,10}charge|under.{0,10}charge/ },
+    { name:'UTC / Scheduling Bug',           kw:/utc|scheduled.{0,20}future|scheduling.{0,20}fail|month.?end|last.{0,10}day/ },
+    { name:'Billing Type Misconfiguration',  kw:/billing.{0,20}type|billing.{0,20}config|activate.{0,20}faktur|fakturering|not.{0,20}invoic/ },
+    { name:'Invoice UI / State Visibility',  kw:/uninvoic|invoice.{0,20}ui|line.?item.{0,20}state|not.{0,20}visible|not.{0,20}show|invoice.{0,20}view/ },
+    { name:'Budget Change Not Reflected',    kw:/budget.{0,20}change|amount.{0,20}not.{0,20}reflect|increase.{0,20}not|decrease.{0,20}not|wrong.{0,20}budget/ },
+  ],
+  'Subscription Management': [
+    { name:'Cannot End / Cancel Subscription', kw:/can.{0,5}t.{0,10}end|cannot.{0,10}end|can.{0,5}t.{0,10}cancel|cannot.{0,10}cancel|block.{0,20}cancel|prevent.{0,20}end/ },
+    { name:'Budget Change Not Reflected',      kw:/budget.{0,20}change|amount.{0,20}not|increase.{0,20}not|decrease.{0,20}not/ },
+    { name:'Subscription Create / Update Error', kw:/creat.{0,20}subscript|update.{0,20}subscript|subscript.{0,20}error|no.{0,20}budget.?period|budgetperiod/ },
+  ],
+  'Campaign & Ad Management': [
+    { name:'No Ads / Silent Delivery Failure', kw:/no.{0,10}ad|not.{0,20}deliver|silent.{0,20}fail|no.{0,15}creative|adcreative/ },
+    { name:'Campaign Creation Failure',        kw:/fail.{0,20}creat|not.{0,20}creat|creation.{0,20}fail|campaign.{0,20}fail/ },
+    { name:'Always-On / AutoAds Issues',       kw:/always.?on|autoads|auto.?ads/ },
+    { name:'On Demand Issues',                 kw:/on.?demand/ },
+    { name:'Veckoboost Issues',                kw:/veckoboost/ },
+    { name:'Campaign Config / Adjustment',     kw:/adjust|config|setting|change/ },
+  ],
+  'Reporting & Analytics': [
+    { name:'Partner Reporting Errors',    kw:/partner.{0,20}report|report.{0,20}email|mailslurp/ },
+    { name:'Overdelivery Investigation',  kw:/overdeliver|over.{0,10}deliver|impression.{0,20}spike|telemetri/ },
+    { name:'Statistics API Failures',     kw:/statistic.{0,20}api|statistic.{0,20}fail|500.{0,20}statistic|load.{0,20}statistic/ },
+    { name:'Report UI / Display Issues',  kw:/report.{0,20}ui|report.{0,20}display|report.{0,20}show|delivery.{0,20}percent/ },
+  ],
+  'API & Integration': [
+    { name:'Google Ads API Updates',   kw:/google.?ads|google.{0,10}api/ },
+    { name:'LinkedIn API Updates',     kw:/linkedin.{0,10}api|linkedin.{0,10}market/ },
+    { name:'Meta API Updates',         kw:/meta.{0,10}api|meta.{0,10}market/ },
+    { name:'Third-Party Integration',  kw:/influeris|integration|third.?party|external.{0,10}api/ },
+  ],
+  'Frontend & UI': [
+    { name:'Customer Listing Bugs',  kw:/customer.{0,20}list|customer.{0,20}view|customer.{0,20}page/ },
+    { name:'Campaign Listing Bugs',  kw:/campaign.{0,20}list|campaign.{0,20}view|campaign.{0,20}page|sorting/ },
+    { name:'Preview Issues',         kw:/preview/ },
+    { name:'Language / Config UI',   kw:/language.?config|wrong.{0,20}language|language.{0,20}default/ },
+    { name:'Build / Vite Warnings',  kw:/vite|build.{0,20}warn|frontend.{0,20}error|dev.{0,20}server/ },
+    { name:'General UI Bug',         kw:/render|display|broken.{0,20}ui|ui.{0,20}bug|not.{0,20}show|not.{0,20}visible|orderpage/ },
+  ],
+  'Infrastructure & Platform': [
+    { name:'CI / Deployment Failures',   kw:/deploy|pipeline|ci.{0,10}fail|build.{0,20}fail|auto.?mapper/ },
+    { name:'Data Integrity Issues',      kw:/stale.{0,20}data|data.{0,20}integrity|duplicate.{0,20}data/ },
+    { name:'Azure Function / PDF',       kw:/azure.?function|pdf.{0,20}render|asset.{0,20}process|taskcancel/ },
+    { name:'Blob / Storage Issues',      kw:/blob|storage|url.{0,20}encod/ },
+    { name:'Performance / Errors',       kw:/500|rate.?limit|gateway|timeout|slow/ },
+  ],
+  'Prospect & Order Flow': [
+    { name:'Duplicate Prospects / Users', kw:/duplicate.{0,20}prospect|duplicate.{0,20}user|duplicate.{0,20}creat/ },
+    { name:'Order / Draft Creation Bugs', kw:/order.{0,20}creat|draft.{0,20}creat|orderlink|order.{0,20}page|orderpage|weborder/ },
+    { name:'On Demand Flow Issues',       kw:/on.?demand/ },
+    { name:'Prospect Source / Filter',    kw:/prospect.?source|filter.{0,20}prospect/ },
+    { name:'Webshop / Gateway',           kw:/webshop|gateway|sms.{0,20}weborder|staging.{0,20}gateway/ },
+    { name:'Access / Reseller Config',    kw:/reseller|trusted.?user|jobbrella|tenant|not.{0,20}connect/ },
+  ],
+  'Creatives & Templates': [
+    { name:'Display Template Regressions', kw:/display.{0,20}template|template.{0,20}regress|restore.?flat|header.{0,20}broken/ },
+    { name:'Splash / Image Issues',        kw:/splash|image.{0,20}issue|image.{0,20}fail|403.{0,20}image|random.{0,20}image|image.{0,20}upload/ },
+    { name:'Video Template Issues',        kw:/video.{0,20}template|video.{0,20}static|video.{0,20}fail|video.{0,20}creat/ },
+    { name:'Preview Problems',             kw:/preview/ },
+    { name:'PDF / Asset Processing',       kw:/pdf|asset.{0,20}process|taskcancel|blob.{0,20}path/ },
+    { name:'New Template Creation',        kw:/new.{0,20}template|creat.{0,20}template|add.{0,20}template/ },
+  ],
+  'Email & Notifications': [
+    { name:'Email Delivery Failures',  kw:/email.{0,20}fail|email.{0,20}not.{0,10}sent|not.{0,20}send.{0,10}email|mailslurp|no.{0,10}email/ },
+    { name:'Staging Email Leaks',      kw:/staging.{0,20}email|sandbox.{0,20}email|email.{0,20}staging/ },
+    { name:'Notification Trigger Bug', kw:/notif|sms|trigger.{0,20}email|all.{0,20}email.{0,20}sent/ },
+  ],
+  'Access & Permissions': [
+    { name:'Tenant / Client Access',   kw:/tenant|not.{0,20}access|access.{0,20}denied|403|reseller/ },
+    { name:'User Role Issues',         kw:/trusted.?user|role|permission|user.{0,20}access/ },
+    { name:'OAuth / Auth Failures',    kw:/oauth|auth|unauthorized|login.{0,20}fail/ },
+  ],
+  'Feature Request': [
+    { name:'New Functionality',     kw:/new.{0,20}feature|add.{0,20}support|implement|enable/ },
+    { name:'Enhancement / Improvement', kw:/enhance|improve|update.{0,20}ui|better|optimis/ },
+    { name:'User Story',            kw:/user.?story|as.{0,10}user/ },
+  ],
+  'Bug / Defect': [
+    { name:'Crash / Exception',    kw:/crash|exception|null.?reference|stack.?trace|unhandled/ },
+    { name:'Silent / No Error',    kw:/silent|no.{0,10}error|no.{0,10}message|no.{0,10}feedback/ },
+    { name:'Data / Logic Error',   kw:/wrong.{0,20}value|incorrect.{0,20}value|wrong.{0,20}result|calculation/ },
+    { name:'UI Bug',               kw:/broken|not.{0,20}show|not.{0,20}display|not.{0,20}render/ },
+  ],
+  'Performance': [
+    { name:'Slow Load / Timeout',   kw:/slow|timeout|latency|load.{0,10}time/ },
+    { name:'Memory / CPU',          kw:/memory|cpu|resource|high.{0,10}usage/ },
+    { name:'Rate Limiting',         kw:/rate.?limit|throttle/ },
+  ],
+};
+
+function getSubArea(catName, title, desc) {
+  const rules = SUB_RULES[catName];
+  if (!rules) return 'General';
+
+  const titleLower = (title||'').toLowerCase();
+  const descLower  = (desc ||'').toLowerCase();
+  const scores     = {};
+
+  for (const r of rules) {
+    let score = 0;
+    if (r.kw.test(titleLower)) score += 3;  // title match = 3pts
+    if (r.kw.test(descLower))  score += 1;  // desc  match = 1pt
+    if (score > 0) scores[r.name] = (scores[r.name]||0) + score;
+  }
+
+  const ranked = Object.entries(scores).sort((a,b) => b[1]-a[1]);
+  if (ranked.length) return ranked[0][0];
+
+  return 'General';
+}
+
+// ══════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════
+const S = { org:'bifirm', project:'SpiderAds', pat:'' };
+let catCI=null, openCI=null;
+
+// ══════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════
+function init() {
+  const dago = n => { const d=new Date(); d.setDate(d.getDate()-n); return d.toISOString().split('T')[0]; };
+  document.getElementById('dateFrom').value = dago(107);
+  document.getElementById('dateTo').value   = new Date().toISOString().split('T')[0];
+  buildRuleTable();
+}
+
+function buildRuleTable() {
+  const tb = document.getElementById('ruleTbody');
+  RULES.forEach(r => {
+    const tr = document.createElement('tr');
+    const kws = r.kw ? r.kw.source.replace(/\\/g,'').split('|').join(', ') : '— catches everything else';
+    tr.innerHTML = `<td><span class="cdot" style="background:${r.color}"></span>${r.name}</td><td>${kws}</td>`;
+    tb.appendChild(tr);
+  });
+}
+
+function setQ(days, btn) {
+  document.querySelectorAll('.date-quick .bq').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  const dago = n => { const d=new Date(); d.setDate(d.getDate()-n); return d.toISOString().split('T')[0]; };
+  document.getElementById('dateFrom').value = dago(days);
+  document.getElementById('dateTo').value   = new Date().toISOString().split('T')[0];
+}
+
+// ══════════════════════════════════════════════════
+// STEP 1 — CONNECT
+// ══════════════════════════════════════════════════
+async function handleConnect() {
+  const org  = document.getElementById('orgInp').value.trim();
+  const proj = document.getElementById('projInp').value.trim();
+  const pat  = document.getElementById('patInp').value.trim();
+  if (!org||!proj||!pat) { showConnErr('Organisation, Project and PAT are all required.'); return; }
+
+  S.org=org; S.project=proj; S.pat=pat;
+  setBusy('connectBtn','connectTxt','connectSpin', true, 'Connecting…');
+  hideConnErr(); startLB();
+
+  try {
+    const areas = await fetchAreaPaths();
+    populateBoards(areas);
+    document.getElementById('screenConnect').classList.add('hidden');
+    document.getElementById('screenDash').classList.remove('hidden');
+    document.getElementById('navLinks').classList.remove('hidden');
+    setStatus('live');
+  } catch(e) {
+    showConnErr('Connection failed: ' + e.message);
+    setStatus('err');
+  }
+  setBusy('connectBtn','connectTxt','connectSpin', false, 'Connect & Fetch Boards');
+  stopLB();
+}
+
+async function fetchAreaPaths() {
+  const r = await fetch(
+    `https://dev.azure.com/${S.org}/${S.project}/_apis/wit/classificationnodes/areas?$depth=10&api-version=7.1`,
+    { headers: azdoHdrs() }
+  );
+  if (!r.ok) { const e=await r.json().catch(()=>({})); throw new Error(e.message||`HTTP ${r.status} — check PAT and project name`); }
+  const data = await r.json();
+  const paths = [];
+  function walk(node, parent) {
+    const full = parent ? `${parent}\\${node.name}` : node.name;
+    paths.push({ label:node.name, path:full, depth:full.split('\\').length-1 });
+    (node.children||[]).forEach(c=>walk(c,full));
+  }
+  walk(data, '');
+  return paths;
+}
+
+function populateBoards(areas) {
+  const sel = document.getElementById('boardSel');
+  sel.innerHTML = '<option value="">— All boards (entire project) —</option>';
+  areas.forEach(a => {
+    const o = document.createElement('option');
+    o.value = a.path;
+    o.textContent = '\u00a0'.repeat(a.depth*2) + a.label + '  ·  ' + a.path;
+    sel.appendChild(o);
+  });
+}
+
+// ══════════════════════════════════════════════════
+// STEP 2 — ANALYSE
+// ══════════════════════════════════════════════════
+async function runAnalysis() {
+  const area  = document.getElementById('boardSel').value;
+  const from  = document.getElementById('dateFrom').value;
+  const to    = document.getElementById('dateTo').value;
+  const limit = parseInt(document.getElementById('limitInp').value)||2000;
+  if (!from||!to) { showDashErr('Please set a date range.'); return; }
+  hideDashErr();
+  setBusy('runBtn','runTxt','runSpin', true, 'Analysing…');
+  setStatus('busy'); startLB();
+  document.getElementById('progOv').classList.add('on');
+
+  try {
+    // Step 1 — fetch IDs
+    setProgress(1, 'Fetching ticket IDs from Azure DevOps…', '');
+    const ids = await fetchAllIds(from, to, limit, area);
+
+    if (!ids.length) {
+      closeProg();
+      showDashErr('No tickets found for this board and date range. Try a wider date range or a different board.');
+      setBusy('runBtn','runTxt','runSpin', false, 'Analyse Board');
+      setStatus('live'); stopLB(); return;
+    }
+
+    // Step 2 — fetch details + descriptions
+    setProgress(2, `Loading ${ids.length} ticket details…`, '');
+    const tickets = await fetchDetails(ids, (done,tot) => setLog(`${done} / ${tot} loaded`));
+
+    // Step 3 — categorise + render
+    setProgress(3, 'Categorising and building dashboard…', '');
+    await sleep(80);
+    const { categories, insights } = processTickets(tickets, area);
+    closeProg();
+    renderAll(tickets, categories, insights, from, to, area);
+    setStatus('live');
+
+  } catch(e) {
+    closeProg();
+    showDashErr('Analysis failed: ' + e.message);
+    console.error(e);
+    setStatus('err');
+  }
+  setBusy('runBtn','runTxt','runSpin', false, 'Analyse Board');
+  stopLB();
+}
+
+// ══════════════════════════════════════════════════
+// FETCH ALL IDs — paginated (no 500 limit)
+// ══════════════════════════════════════════════════
+async function fetchAllIds(from, to, limit, area) {
+  const base  = `https://dev.azure.com/${S.org}/${S.project}/_apis`;
+  let ids=[], pages=0;
+
+  const conds = [
+    `[System.TeamProject] = '${S.project}'`,
+    `[System.ChangedDate] >= '${from}'`,
+    `[System.ChangedDate] <= '${to}'`
+  ];
+  if (area) conds.push(`[System.AreaPath] UNDER '${area}'`);
+
+  const wiql = { query:`SELECT [System.Id] FROM WorkItems WHERE ${conds.join(' AND ')} ORDER BY [System.ChangedDate] DESC` };
+  let token = null;
+
+  do {
+    const url = `https://dev.azure.com/${S.org}/${S.project}/_apis/wit/wiql?api-version=7.1` + (token?`&continuationToken=${token}`:'');
+    const r   = await fetch(url, { method:'POST', headers:azdoHdrs(), body:JSON.stringify(wiql) });
+    if (!r.ok) { const e=await r.json().catch(()=>({})); throw new Error(e.message||`WIQL error HTTP ${r.status}`); }
+    const d   = await r.json();
+    ids = ids.concat((d.workItems||[]).map(w=>w.id));
+    token = r.headers.get('x-ms-continuationtoken') || d.continuationToken || null;
+    pages++;
+    setLog(`Page ${pages} · ${ids.length} IDs found`);
+    if (ids.length >= limit) break;
+  } while (token);
+
+  document.getElementById('kPages').textContent = pages;
+  return [...new Set(ids)].slice(0, limit);
+}
+
+// ══════════════════════════════════════════════════
+// FETCH DETAILS + DESCRIPTIONS
+// ══════════════════════════════════════════════════
+async function fetchDetails(ids, onProg) {
+  const base   = `https://dev.azure.com/${S.org}/${S.project}/_apis`;
+  // Include System.Description for better categorisation
+  const fields = 'System.Id,System.Title,System.WorkItemType,System.State,System.AreaPath,System.Tags,System.Description,Microsoft.VSTS.Common.ActivatedDate,Microsoft.VSTS.Common.ClosedDate,System.CreatedDate';
+  let items=[];
+  for (let i=0; i<ids.length; i+=200) {
+    const r = await fetch(
+      `${base}/wit/workitems?ids=${ids.slice(i,i+200).join(',')}&fields=${fields}&api-version=7.1`,
+      { headers:azdoHdrs() }
+    );
+    if (!r.ok) throw new Error(`Details fetch HTTP ${r.status}`);
+    items = items.concat((await r.json()).value||[]);
+    onProg(Math.min(i+200, ids.length), ids.length);
+  }
+  return items.map(w => ({
+    id:            w.id,
+    title:         w.fields['System.Title']||'',
+    type:          w.fields['System.WorkItemType']||'',
+    state:         w.fields['System.State']||'',
+    area:          w.fields['System.AreaPath']||'',
+    tags:          w.fields['System.Tags']||'',
+    desc:          stripHtml(w.fields['System.Description']||'').slice(0,400),
+    activatedDate: w.fields['Microsoft.VSTS.Common.ActivatedDate']||null,
+    closedDate:    w.fields['Microsoft.VSTS.Common.ClosedDate']||null,
+    createdDate:   w.fields['System.CreatedDate']||null,
+  }));
+}
+
+// ══════════════════════════════════════════════════
+// PROCESS — categorise (using title + desc) + insights
+// ══════════════════════════════════════════════════
+function processTickets(tickets, area) {
+  tickets.forEach(t => {
+    t.category = categorize(t.title, t.desc, t.type, t.tags);
+    t.subArea  = getSubArea(t.category, t.title, t.desc);
+  });
+
+  // Group by category — only categories present in data appear
+  const categories = {};
+  tickets.forEach(t => {
+    if (!categories[t.category]) categories[t.category] = {};
+    if (!categories[t.category][t.subArea]) categories[t.category][t.subArea] = [];
+    categories[t.category][t.subArea].push(t);
+  });
+
+  const insights = generateInsights(tickets, categories);
+  return { categories, insights };
+}
+
+function generateInsights(tickets, cats) {
+  const ins = [];
+  // Flatten each category to all its tickets for insight calculations
+  const flatCats = {};
+  Object.entries(cats).forEach(([cat, subs]) => {
+    flatCats[cat] = Object.values(subs).flat();
+  });
+
+  const catNames = Object.keys(flatCats).sort((a,b)=>flatCats[b].length-flatCats[a].length);
+  const total    = tickets.length;
+
+  // P1 — top volume
+  if (catNames[0]) {
+    const n=catNames[0], c=flatCats[n].length, p=pct(c,total);
+    ins.push({ level:'p1', label:'Highest Volume', text:`<b>${n}</b> accounts for ${c} tickets (${p}% of total) — the single largest area in this board.` });
+  }
+
+  // P1 — worst open rate (min 2 open)
+  const openRates = catNames
+    .map(n => ({ n, open:flatCats[n].filter(t=>isOpen(t.state)).length, tot:flatCats[n].length }))
+    .filter(x=>x.open>=2).sort((a,b)=>(b.open/b.tot)-(a.open/a.tot));
+  if (openRates[0]) {
+    const x=openRates[0];
+    ins.push({ level:'p1', label:'Most Unresolved', text:`<b>${x.n}</b> has ${x.open} open tickets (${pct(x.open,x.tot)}% open rate). Needs immediate attention.` });
+  }
+
+  // P2 — highest bug rate (min 2 bugs)
+  const bugRates = catNames
+    .map(n => ({ n, bugs:flatCats[n].filter(t=>isBug(t.type)).length, tot:flatCats[n].length }))
+    .filter(x=>x.bugs>=2).sort((a,b)=>(b.bugs/b.tot)-(a.bugs/a.tot));
+  if (bugRates[0]) {
+    const x=bugRates[0];
+    ins.push({ level:'p2', label:'Highest Bug Rate', text:`<b>${x.n}</b> is ${pct(x.bugs,x.tot)}% bugs (${x.bugs} of ${x.tot} tickets). Likely a systemic code quality issue.` });
+  }
+
+  // P2 — manual ops
+  const manual = tickets.filter(t=>isManual(t.type)).length;
+  if (manual>0) {
+    ins.push({ level:'p2', label:'Manual Operations', text:`${manual} tickets (${pct(manual,total)}%) are manual/operational tasks. Automation could reduce recurring workload.` });
+  }
+
+  // P3 — total open
+  const openAll = tickets.filter(t=>isOpen(t.state)).length;
+  if (openAll>0) {
+    ins.push({ level:'p3', label:'Open Backlog', text:`${openAll} tickets (${pct(openAll,total)}%) remain unresolved across ${openRates.length} categories.` });
+  }
+
+  // P4 — avg resolution
+  let totD=0,cnt=0;
+  tickets.filter(t=>!isOpen(t.state)).forEach(t=>{
+    const s=t.activatedDate||t.createdDate;
+    if (s&&t.closedDate) { const d=(new Date(t.closedDate)-new Date(s))/864e5; if(d>=0&&d<365){totD+=d;cnt++;} }
+  });
+  if (cnt>=5) {
+    const avg=(totD/cnt).toFixed(1);
+    const verdict=avg<3?'excellent (under 3 days)':avg<7?'good (under 1 week)':avg<14?'moderate — consider SLA targets':avg<30?'high — tickets aging over 2 weeks':'very high — review triage process';
+    ins.push({ level:'p4', label:'Resolution Speed', text:`Average time to close is <b>${avg} days</b> across ${cnt} resolved tickets — ${verdict}.` });
+  }
+
+  return ins;
+}
+
+function pct(n,d) { return d?Math.round(n/d*100):0; }
+
+// ══════════════════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════════════════
+function renderAll(tickets, categories, insights, from, to, area) {
+  // Flatten categories for charts and KPIs
+  const flatCats = {};
+  Object.entries(categories).forEach(([cat, subs]) => {
+    flatCats[cat] = Object.values(subs).flat();
+  });
+
+  // Only show categories that have tickets — board-aware
+  const catNames = Object.keys(flatCats).sort((a,b)=>flatCats[b].length-flatCats[a].length);
+  const total  = tickets.length;
+  const bugs   = tickets.filter(t=>isBug(t.type)).length;
+  const manual = tickets.filter(t=>isManual(t.type)).length;
+  const open   = tickets.filter(t=>isOpen(t.state)).length;
+  const closed = tickets.filter(t=>!isOpen(t.state)).length;
+
+  let totD=0,cnt=0;
+  tickets.filter(t=>!isOpen(t.state)).forEach(t=>{
+    const s=t.activatedDate||t.createdDate;
+    if(s&&t.closedDate){const d=(new Date(t.closedDate)-new Date(s))/864e5;if(d>=0&&d<365){totD+=d;cnt++;}}
+  });
+
+  document.getElementById('kTotal').textContent  = total;
+  document.getElementById('kBugs').textContent   = bugs;
+  document.getElementById('kManual').textContent = manual;
+  document.getElementById('kOpen').textContent   = open;
+  document.getElementById('kClosed').textContent = closed;
+  document.getElementById('kCats').textContent   = catNames.length;
+  document.getElementById('kAvg').textContent    = cnt?(totD/cnt).toFixed(1):'—';
+
+  const fmtD = d => new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+  document.getElementById('footerBar').textContent =
+    `SpiderAds · ${S.org}/${S.project} · ${area||'All boards'} · ${total} tickets · ${fmtD(from)} – ${fmtD(to)} · ${new Date().toLocaleTimeString()}`;
+
+  renderCharts(flatCats, catNames);
+  renderInsights(insights);
+  renderAccordion(categories, catNames);
+}
+
+function renderCharts(cats, catNames) {
+  if(catCI){catCI.destroy();catCI=null;}
+  if(openCI){openCI.destroy();openCI=null;}
+  Chart.defaults.color='#6b7280'; Chart.defaults.borderColor='#252933';
+
+  const colors  = catNames.map(c=>catColor(c));
+  const totals  = catNames.map(c=>cats[c].length);
+  const opens   = catNames.map(c=>cats[c].filter(t=>isOpen(t.state)).length);
+  const closeds = catNames.map(c=>cats[c].filter(t=>!isOpen(t.state)).length);
+
+  const el = document.getElementById('catChart');
+  catCI = new Chart(el, {
+    type:'bar',
+    data:{ labels:catNames, datasets:[{label:'Tickets',data:totals,backgroundColor:colors,borderRadius:5,borderSkipped:false}] },
+    options:{
+      indexAxis:'y', layout:{padding:{left:10}},
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.raw} tickets — click to explore`}}},
+      scales:{
+        x:{beginAtZero:true,grid:{color:'#1a1e28'}},
+        y:{grid:{display:false},ticks:{font:{family:'DM Mono',size:11}},afterFit(s){s.width=178;}}
+      },
+      onClick(e){ const p=catCI.getElementsAtEventForMode(e,'nearest',{intersect:true},false); if(!p.length)return; const n=catNames[p[0].index]; openMod(n,cats[n],catColor(n)); },
+      onHover(e){ const p=catCI.getElementsAtEventForMode(e,'nearest',{intersect:true},false); el.style.cursor=p.length?'pointer':'default'; }
+    }
+  });
+
+  openCI = new Chart(document.getElementById('openChart'), {
+    type:'bar',
+    data:{ labels:catNames, datasets:[
+      {label:'Open',  data:opens,   backgroundColor:'#ef4444',borderRadius:4},
+      {label:'Closed',data:closeds, backgroundColor:'#374151',borderRadius:4}
+    ]},
+    options:{
+      indexAxis:'y', layout:{padding:{left:10}},
+      plugins:{legend:{position:'top',labels:{boxWidth:10,font:{family:'DM Mono',size:11}}}},
+      scales:{
+        x:{stacked:true,beginAtZero:true,grid:{color:'#1a1e28'}},
+        y:{stacked:true,grid:{display:false},ticks:{font:{family:'DM Mono',size:11}},afterFit(s){s.width=178;}}
+      }
+    }
+  });
+}
+
+function renderInsights(insights) {
+  document.getElementById('insGrid').innerHTML = insights.map(i=>`
+    <div class="ins-card ${i.level}">
+      <div class="ins-lbl">${i.label}</div>
+      <div class="ins-txt">${i.text}</div>
+    </div>`).join('');
+}
+
+const stCls = s => ({Closed:'sc',New:'so',Active:'so',Approved:'sa',Ready:'sr',Testing:'st',Blocked:'so'}[s]||'sc');
+
+function renderAccordion(categories, catNames) {
+  const list = document.getElementById('catList');
+  list.innerHTML = '';
+  if (!catNames.length) {
+    list.innerHTML='<div class="empty"><div class="ei">🔍</div><p>No tickets found.</p></div>'; return;
+  }
+
+  catNames.forEach(catName => {
+    const subs     = categories[catName]; // { subAreaName: [tickets] }
+    const allItems = Object.values(subs).flat();
+    const openCnt  = allItems.filter(t=>isOpen(t.state)).length;
+    const bugCnt   = allItems.filter(t=>isBug(t.type)).length;
+    const bugPct   = allItems.length ? Math.round(bugCnt/allItems.length*100) : 0;
+    const col      = catColor(catName);
+    const topOpen  = [...allItems].sort((a,b)=>isOpen(b.state)-isOpen(a.state)).find(t=>isOpen(t.state));
+    const pattern  = openCnt>0
+      ? `<b>${bugPct}% bug rate · ${openCnt} still open.</b> Top open: "${topOpen?.title||allItems[0]?.title}"`
+      : `<b>${bugPct}% bug rate · all ${allItems.length} resolved.</b> Top ticket: "${allItems[0]?.title}"`;
+
+    // Sort sub-areas by ticket count
+    const subNames = Object.keys(subs).sort((a,b)=>subs[b].length-subs[a].length);
+    // Only show sub-areas if there are multiple, or if the only one isn't "General"
+    const showSubs = subNames.length > 1 || (subNames.length===1 && subNames[0]!=='General');
+
+    const card = document.createElement('div');
+    card.className = 'cat-card';
+    card.innerHTML = `
+      <div class="cat-trig" onclick="this.closest('.cat-card').classList.toggle('open')">
+        <div class="cat-bar" style="background:${col}"></div>
+        <div class="cat-inf">
+          <div class="cat-nm">${catName}</div>
+          <div class="cat-sub">${allItems.length} tickets · ${subNames.filter(s=>s!=='General').length || subNames.length} sub-areas · ${bugPct}% bug rate</div>
+        </div>
+        <div class="cat-pills">
+          <span class="pill">${allItems.length} tickets</span>
+          <span class="pill bg">${bugCnt} bugs</span>
+          ${openCnt>0?`<span class="pill op">${openCnt} open</span>`:''}
+        </div>
+        <div class="cat-chev">▶</div>
+      </div>
+      <div class="cat-panel">
+        <div class="cat-pattern">
+          <div class="cat-pattern-lbl">Pattern</div>
+          ${pattern}
+        </div>
+
+        ${showSubs ? `
+        <div class="sub-areas">
+          ${subNames.map(subName => {
+            const items    = subs[subName];
+            const sOpen    = items.filter(t=>isOpen(t.state)).length;
+            const sBugs    = items.filter(t=>isBug(t.type)).length;
+            const sId      = `sa-${catName.replace(/\W/g,'-')}-${subName.replace(/\W/g,'-')}`;
+            const sortedS  = [...items].sort((a,b)=>isOpen(b.state)-isOpen(a.state));
+            return `
+              <div class="sub-area-row" id="${sId}">
+                <div class="sub-trig" onclick="toggleSub('${sId}')">
+                  <div class="sub-dot" style="background:${col}"></div>
+                  <div class="sub-nm">${subName}</div>
+                  <div class="sub-pills">
+                    <span class="sub-pill">${items.length}</span>
+                    ${sBugs>0?`<span class="sub-pill bg">${sBugs} bugs</span>`:''}
+                    ${sOpen>0?`<span class="sub-pill op">${sOpen} open</span>`:''}
+                  </div>
+                  <div class="sub-chev">▶</div>
+                </div>
+                <div class="sub-panel">
+                  <div class="t-list">
+                    ${sortedS.map(t=>`
+                      <div class="t-row">
+                        <div class="${isOpen(t.state)?'dot-o':'dot-c'}"></div>
+                        <a class="tid" href="https://dev.azure.com/${S.org}/${S.project}/_workitems/edit/${t.id}" target="_blank">#${t.id}</a>
+                        <div class="ttl">${t.title}</div>
+                        <div class="ttype">${t.type}</div>
+                        <div class="tst ${stCls(t.state)}">${t.state}</div>
+                      </div>`).join('')}
+                  </div>
+                </div>
+              </div>`;
+          }).join('')}
+        </div>` : `
+        <div class="t-list">
+          ${[...allItems].sort((a,b)=>isOpen(b.state)-isOpen(a.state)).map(t=>`
+            <div class="t-row">
+              <div class="${isOpen(t.state)?'dot-o':'dot-c'}"></div>
+              <a class="tid" href="https://dev.azure.com/${S.org}/${S.project}/_workitems/edit/${t.id}" target="_blank">#${t.id}</a>
+              <div class="ttl">${t.title}</div>
+              <div class="ttype">${t.type}</div>
+              <div class="tst ${stCls(t.state)}">${t.state}</div>
+            </div>`).join('')}
+        </div>`}
+
+      </div>`;
+    list.appendChild(card);
+  });
+}
+
+function toggleSub(id) {
+  document.getElementById(id).classList.toggle('open');
+}
+
+// ══════════════════════════════════════════════════
+// MODAL
+// ══════════════════════════════════════════════════
+function openMod(catName, items, col) {
+  const openCnt = items.filter(t=>isOpen(t.state)).length;
+  const bugCnt  = items.filter(t=>isBug(t.type)).length;
+  document.getElementById('mBar').style.background = col;
+  document.getElementById('mTitle').textContent    = catName;
+  document.getElementById('mMeta').textContent     = `${items.length} tickets · ${bugCnt} bugs · ${openCnt} open`;
+  const sorted = [...items].sort((a,b)=>isOpen(b.state)-isOpen(a.state));
+  document.getElementById('mBody').innerHTML = `
+    <div class="t-list" style="padding:4px 0">
+      ${sorted.map(t=>`
+        <div class="t-row">
+          <div class="${isOpen(t.state)?'dot-o':'dot-c'}"></div>
+          <a class="tid" href="https://dev.azure.com/${S.org}/${S.project}/_workitems/edit/${t.id}" target="_blank">#${t.id}</a>
+          <div class="ttl">${t.title}</div>
+          <div class="ttype">${t.type}</div>
+          <div class="tst ${stCls(t.state)}">${t.state}</div>
+        </div>`).join('')}
+    </div>`;
+  document.getElementById('modOv').classList.add('on');
+  document.body.style.overflow = 'hidden';
+}
+function closeMod(e) { if(e.target===document.getElementById('modOv')) closeModDirect(); }
+function closeModDirect() { document.getElementById('modOv').classList.remove('on'); document.body.style.overflow=''; }
+
+// ══════════════════════════════════════════════════
+// HOW DRAWER
+// ══════════════════════════════════════════════════
+function openHow()      { document.getElementById('howOv').classList.add('on'); document.body.style.overflow='hidden'; }
+function closeHow()     { document.getElementById('howOv').classList.remove('on'); document.body.style.overflow=''; }
+function closeHowOv(e)  { if(e.target===document.getElementById('howOv')) closeHow(); }
+
+// ══════════════════════════════════════════════════
+// DISCONNECT
+// ══════════════════════════════════════════════════
+function disconnect() {
+  document.getElementById('screenDash').classList.add('hidden');
+  document.getElementById('navLinks').classList.add('hidden');
+  document.getElementById('screenConnect').classList.remove('hidden');
+  document.getElementById('patInp').value = '';
+  document.getElementById('connectErr').style.display = 'none';
+  setStatus('idle');
+}
+
+// ══════════════════════════════════════════════════
+// UI HELPERS
+// ══════════════════════════════════════════════════
+const azdoHdrs = () => ({ 'Authorization':'Basic '+btoa(':'+S.pat), 'Content-Type':'application/json' });
+
+function setBusy(btnId, txtId, spinId, v, msg) {
+  document.getElementById(txtId).textContent = msg;
+  document.getElementById(spinId).classList.toggle('hidden', !v);
+  document.getElementById(btnId).disabled = v;
+}
+function showConnErr(m) { const e=document.getElementById('connectErr'); e.textContent=m; e.style.display='block'; }
+function hideConnErr()  { document.getElementById('connectErr').style.display='none'; }
+function showDashErr(m) { const e=document.getElementById('dashErr'); e.textContent=m; e.classList.remove('hidden'); }
+function hideDashErr()  { document.getElementById('dashErr').classList.add('hidden'); }
+
+function setStatus(s) {
+  const d=document.getElementById('sDot'), t=document.getElementById('sTxt');
+  d.className = 'sdot'+(s==='live'?' live':s==='err'?' err':s==='busy'?' busy':'');
+  const m={live:['Connected','var(--green)'],err:['Error','var(--red)'],busy:['Analysing…','var(--amber)'],idle:['Not connected','var(--muted)']};
+  const [txt,col] = m[s]||m.idle;
+  t.textContent=txt; t.style.color=col;
+}
+function setProgress(step, sub, log) {
+  document.getElementById('progFill').style.width = `${Math.round((step/3)*100)}%`;
+  document.getElementById('progStep').innerHTML   = `Step <b>${step}</b> of 3`;
+  document.getElementById('progSub').textContent  = sub;
+  if(log) setLog(log);
+}
+function setLog(m)  { document.getElementById('progLog').textContent = m; }
+function closeProg(){ document.getElementById('progOv').classList.remove('on'); }
+function startLB()  { document.getElementById('lb').classList.add('run'); }
+function stopLB()   { const b=document.getElementById('lb'); b.classList.remove('run'); b.style.width='100%'; setTimeout(()=>{b.style.transition='none';b.style.width='0';setTimeout(()=>b.style.transition='',50);},700); }
+
+// ══════════════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════════════
+const isOpen   = s => !['Closed','Resolved','Done'].includes(s);
+const isBug    = t => /bug|spider bug|defect/i.test(t||'');
+const isManual = t => /spindling|manual/i.test(t||'');
+const sleep    = ms => new Promise(r=>setTimeout(r,ms));
+function stripHtml(h) { const d=document.createElement('div'); d.innerHTML=h; return d.textContent||d.innerText||''; }
+
+document.addEventListener('keydown', e => { if(e.key==='Escape'){ closeModDirect(); closeHow(); } });
+init();
+</script>
+</body>
+</html>
