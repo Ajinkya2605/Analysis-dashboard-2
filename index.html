@@ -142,6 +142,25 @@ nav {
 .btn-run:disabled { opacity:.4; cursor:not-allowed; }
 .btn-disc { padding:9px 14px; background:transparent; border:1px solid var(--border); border-radius:8px; color:var(--muted); font-size:.78rem; font-family:var(--mono); cursor:pointer; transition:all .15s; align-self:flex-end; white-space:nowrap; }
 .btn-disc:hover { border-color:var(--red); color:var(--red); }
+.btn-ai { padding:9px 16px; background:transparent; border:1px solid var(--purple); border-radius:8px; color:var(--purple); font-size:.78rem; font-family:var(--mono); cursor:pointer; transition:all .15s; align-self:flex-end; white-space:nowrap; display:flex; align-items:center; gap:6px; }
+.btn-ai:hover { background:rgba(168,85,247,.1); }
+.btn-ai.active { background:rgba(168,85,247,.15); }
+
+/* AI KEY MODAL */
+.ai-mod-ov { display:none; position:fixed; inset:0; background:rgba(0,0,0,.75); backdrop-filter:blur(6px); z-index:800; align-items:center; justify-content:center; padding:20px; }
+.ai-mod-ov.on { display:flex; }
+.ai-modal { background:var(--surface); border:1px solid rgba(168,85,247,.35); border-radius:16px; width:100%; max-width:480px; padding:32px 36px; animation:mIn .18s ease; position:relative; }
+.ai-modal-eyebrow { font-family:var(--mono); font-size:.65rem; color:var(--purple); letter-spacing:1.8px; text-transform:uppercase; margin-bottom:8px; }
+.ai-modal h2 { font-size:1.1rem; font-weight:700; letter-spacing:-.3px; margin-bottom:6px; }
+.ai-modal-sub { font-size:.8rem; color:var(--muted); margin-bottom:24px; line-height:1.65; }
+.ai-modal-hint { font-size:.68rem; color:var(--muted); margin-top:8px; line-height:1.7; }
+.ai-modal-hint a { color:var(--purple); }
+.ai-modal-err { background:rgba(239,68,68,.1); border:1px solid rgba(239,68,68,.25); border-radius:7px; padding:8px 12px; font-size:.75rem; color:var(--red); margin-top:10px; display:none; }
+.ai-modal-footer { display:flex; gap:10px; margin-top:24px; }
+.ai-modal-footer .btn-analyse { flex:1; padding:11px; background:var(--purple); border:none; border-radius:8px; color:#fff; font-size:.88rem; font-weight:600; font-family:var(--font); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:7px; transition:opacity .15s; }
+.ai-modal-footer .btn-analyse:hover { opacity:.85; }
+.ai-modal-footer .btn-cancel { padding:11px 20px; background:transparent; border:1px solid var(--border); border-radius:8px; color:var(--muted); font-size:.82rem; font-family:var(--mono); cursor:pointer; transition:all .15s; }
+.ai-modal-footer .btn-cancel:hover { border-color:var(--text); color:var(--text); }
 
 /* err banner */
 .dash-err { background:rgba(239,68,68,.1); border:1px solid rgba(239,68,68,.25); border-radius:8px; padding:10px 16px; font-size:.78rem; color:var(--red); margin:12px 32px 0; max-width:1500px; display:none; }
@@ -350,11 +369,6 @@ footer { text-align:center; color:var(--muted); font-size:.64rem; font-family:va
       <input class="inp" id="patInp" type="password" placeholder="Paste your PAT — scope: Work Items: Read">
     </div>
 
-    <div class="fg" style="margin-top:6px">
-      <label class="lbl">Claude API Key <span style="color:var(--muted);font-size:.6rem;font-weight:400;text-transform:none;letter-spacing:0">(optional — AI fallback for unmatched tickets, uses Haiku)</span></label>
-      <input class="inp" id="claudeKeyInp" type="password" placeholder="sk-ant-... — only unclassified tickets are sent">
-    </div>
-
     <button class="btn-primary" id="connectBtn" onclick="handleConnect()">
       <span id="connectTxt">Connect &amp; Fetch Boards</span>
       <div class="spinner hidden" id="connectSpin"></div>
@@ -411,6 +425,7 @@ footer { text-align:center; color:var(--muted); font-size:.64rem; font-family:va
         <span id="runTxt">Analyse Board</span>
         <div class="spinner hidden" id="runSpin"></div>
       </button>
+      <button class="btn-ai" id="aiBtn" onclick="openAIModal()">✦ AI Analyse</button>
       <button class="btn-disc" onclick="disconnect()">← Disconnect</button>
 
     </div>
@@ -479,6 +494,32 @@ footer { text-align:center; color:var(--muted); font-size:.64rem; font-family:va
       <button class="mclose" onclick="closeModDirect()">✕</button>
     </div>
     <div class="mbody" id="mBody"></div>
+  </div>
+</div>
+
+<!-- AI KEY MODAL -->
+<div class="ai-mod-ov" id="aiModOv" onclick="closeAIModOv(event)">
+  <div class="ai-modal">
+    <div class="ai-modal-eyebrow">Claude Haiku · Optional Layer</div>
+    <h2>AI-Assisted Analysis</h2>
+    <p class="ai-modal-sub">Unmatched tickets that fall into "Other" after keyword rules are sent to Claude Haiku for classification. Only ticket ID, title (90 chars), and type are sent — no descriptions.</p>
+
+    <div class="fg">
+      <label class="lbl">Claude API Key</label>
+      <input class="inp" id="aiKeyInp" type="password" placeholder="sk-ant-api03-...">
+    </div>
+    <p class="ai-modal-hint">
+      Get a free key at <a href="https://console.anthropic.com/settings/keys" target="_blank">console.anthropic.com</a> · Evaluation access gives $5 free credits (~5,000 runs at this usage level)
+    </p>
+    <div class="ai-modal-err" id="aiModErr"></div>
+
+    <div class="ai-modal-footer">
+      <button class="btn-analyse" onclick="runAIAnalysis()">
+        <span id="aiAnalyseTxt">✦ Analyse with AI</span>
+        <div class="spinner hidden" id="aiAnalyseSpin"></div>
+      </button>
+      <button class="btn-cancel" onclick="closeAIModDirect()">Cancel</button>
+    </div>
   </div>
 </div>
 
@@ -844,7 +885,6 @@ async function handleConnect() {
   if (!org||!proj||!pat) { showConnErr('Organisation, Project and PAT are all required.'); return; }
 
   S.org=org; S.project=proj; S.pat=pat;
-  S.claudeKey = document.getElementById('claudeKeyInp').value.trim();
   setBusy('connectBtn','connectTxt','connectSpin', true, 'Connecting…');
   hideConnErr(); startLB();
 
@@ -1053,7 +1093,7 @@ Sub-areas:\n${subHints}
 Reply ONLY with a JSON array: [{"id":N,"cat":"Category","sub":"Sub-area"}]
 Use "Other" only if truly unclassifiable. "sub" must match an existing sub-area name or "General".`;
 
-  const BATCH = 50;
+  const BATCH = 200;
   const results = [];
 
   for (let i = 0; i < tickets.length; i += BATCH) {
@@ -1394,7 +1434,47 @@ function disconnect() {
   document.getElementById('screenConnect').classList.remove('hidden');
   document.getElementById('patInp').value = '';
   document.getElementById('connectErr').style.display = 'none';
+  S.claudeKey = '';
+  document.getElementById('aiBtn').classList.remove('active');
   setStatus('idle');
+}
+
+// ══════════════════════════════════════════════════
+// AI MODAL
+// ══════════════════════════════════════════════════
+function openAIModal() {
+  // Pre-fill if key already set
+  if (S.claudeKey) document.getElementById('aiKeyInp').value = S.claudeKey;
+  document.getElementById('aiModErr').style.display = 'none';
+  document.getElementById('aiModOv').classList.add('on');
+}
+
+function closeAIModOv(e) {
+  if (e.target === document.getElementById('aiModOv')) closeAIModDirect();
+}
+
+function closeAIModDirect() {
+  document.getElementById('aiModOv').classList.remove('on');
+}
+
+async function runAIAnalysis() {
+  const key = document.getElementById('aiKeyInp').value.trim();
+  const errEl = document.getElementById('aiModErr');
+  if (!key) {
+    errEl.textContent = 'Please enter your Claude API key.';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (!key.startsWith('sk-ant-')) {
+    errEl.textContent = 'Invalid key format — Claude API keys start with sk-ant-';
+    errEl.style.display = 'block';
+    return;
+  }
+  S.claudeKey = key;
+  document.getElementById('aiBtn').classList.add('active');
+  closeAIModDirect();
+  // Run full analysis with AI enabled
+  runAnalysis();
 }
 
 // ══════════════════════════════════════════════════
