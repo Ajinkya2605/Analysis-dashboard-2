@@ -350,6 +350,11 @@ footer { text-align:center; color:var(--muted); font-size:.64rem; font-family:va
       <input class="inp" id="patInp" type="password" placeholder="Paste your PAT — scope: Work Items: Read">
     </div>
 
+    <div class="fg" style="margin-top:6px">
+      <label class="lbl">Claude API Key <span style="color:var(--muted);font-size:.6rem;font-weight:400;text-transform:none;letter-spacing:0">(optional — AI fallback for unmatched tickets, uses Haiku)</span></label>
+      <input class="inp" id="claudeKeyInp" type="password" placeholder="sk-ant-... — only unclassified tickets are sent">
+    </div>
+
     <button class="btn-primary" id="connectBtn" onclick="handleConnect()">
       <span id="connectTxt">Connect &amp; Fetch Boards</span>
       <div class="spinner hidden" id="connectSpin"></div>
@@ -541,21 +546,21 @@ footer { text-align:center; color:var(--muted); font-size:.64rem; font-family:va
 // present in the actual data are shown.
 // ══════════════════════════════════════════════════
 const RULES = [
-  { name:'Spider & Data Source',      color:'#6366f1', kw:/spider|datasource|data.?source|spindling|crawl|rootlink/ },
+  { name:'Spider & Data Source',      color:'#6366f1', kw:/spider|datasource|data.?source|spindling|crawl|rootlink|prospectkälla|datakälla|spindel/ },
   { name:'LinkedIn',                  color:'#0077b5', kw:/linkedin/ },
   { name:'Meta \/ Facebook',          color:'#1877f2', kw:/\bmeta\b|facebook|fb.?page|\bcarousel\b/ },
   { name:'YouTube',                   color:'#ff4444', kw:/youtube|\byt\b|yt-/ },
   { name:'PinMeTo',                   color:'#e11d48', kw:/pinmeto|\bpmt\b/ },
   { name:'BidTheatre',                color:'#64748b', kw:/bidtheatre/ },
-  { name:'Invoicing & Billing',       color:'#fbbf24', kw:/invoice|line.?item|billing|budget.?period|budgetperiod|fakturering|uninvoiced|monthly.?arrears|negative.?line|billing.?type/ },
+  { name:'Invoicing & Billing',       color:'#fbbf24', kw:/invoice|line.?item|billing|budget.?period|budgetperiod|fakturering|uninvoiced|monthly.?arrears|negative.?line|billing.?type|periodsbudget|kostnadsst\w{1,6}lle|faktura/ },
   { name:'Subscription Management',  color:'#8b5cf6', kw:/subscription|end.?campaign|cancel.?subscription/ },
-  { name:'Campaign & Ad Management', color:'#f97316', kw:/campaign|ad.?set|adcreative|\bno.?ads?\b|failed.?to.?create|always.?on|autoads|on.?demand|veckoboost|\bbatch\b/ },
-  { name:'Reporting & Analytics',     color:'#10b981', kw:/\breport\b|statistic|telemetri|overdelivery|insights|reach.*frequency|partner.?report/ },
+  { name:'Campaign & Ad Management', color:'#f97316', kw:/campaign|kampanj|\bannons(?!mall)\w*\b|ad.?set|adcreative|\bno.?ads?\b|failed.?to.?create|always.?on|autoads|on.?demand|veckoboost|\bbatch\b|geo.{0,8}upplagd|geostyrning|bid.?strategi|pmax|google.?pmax|kontrollera.{0,25}annons/ },
+  { name:'Reporting & Analytics',     color:'#10b981', kw:/\breport\b|rapportering|m.{0,3}nadsrapportering|statistic|telemetri|overdelivery|insights|reach.*frequency|partner.?report/ },
   { name:'API & Integration',         color:'#06b6d4', kw:/\bapi\b|update.?linkedin|update.?meta|update.?google.?ads|influeris|integration/ },
-  { name:'Frontend & UI',             color:'#14b8a6', kw:/preview|frontend|\blisting\b|\brender\b|customer.?view|campaign.?view|campaign.?page|\bsorting\b|orderpage|vite|language.?config|ui.?bug|user.?interface/ },
-  { name:'Infrastructure & Platform', color:'#6b7280', kw:/deployment|pipeline|\bstaging\b|azure.?function|\bgateway\b|rate.?limit|\bblob\b|pdf.?render|asset.?processing|auto.?mapper|infrastructure/ },
-  { name:'Prospect & Order Flow',     color:'#3b82f6', kw:/\border\b|weborder|webshop|\bvisma\b|orderlink|\bprospect\b|duplicate|reseller|trusted.?user|jobbrella|\btenant\b/ },
-  { name:'Creatives & Templates',     color:'#d97706', kw:/\btemplate\b|\bsplash\b|creative|\bvideo\b|\bimage\b|thumbnail|display.?template|ad.?template|brand.?channel/ },
+  { name:'Frontend & UI',             color:'#14b8a6', kw:/preview|frontend|\blisting\b|\brender\b|customer.?view|campaign.?view|campaign.?page|\bsorting\b|orderpage|vite|language.?config|ui.?bug|user.?interface|logotyp|.ndra.{0,15}(logotyp|f.rg|logo)/ },
+  { name:'Infrastructure & Platform', color:'#6b7280', kw:/deployment|pipeline|\bstaging\b|azure.?function|\bgateway\b|rate.?limit|\bblob\b|pdf.?render|asset.?processing|auto.?mapper|infrastructure|\baks\b|kubernetes|cluster|dependabot|version.?upgrade/ },
+  { name:'Prospect & Order Flow',     color:'#3b82f6', kw:/\border\b|weborder|webshop|\bvisma\b|orderlink|\bprospect\b|duplicate|reseller|trusted.?user|jobbrella|\btenant\b|kund.{0,12}skapad|best.{1,4}llning|best.{1,4}llare|bekr.{1,4}fta|uppstart|informera.{0,20}(kund|s.ljare|live)|meddela.{0,20}(kund|s.ljare)|l.gg.{0,8}till.{0,20}(id\b|nr\b|bm|account|konto)|externt.?id|bmnr/ },
+  { name:'Creatives & Templates',     color:'#d97706', kw:/\btemplate\b|annonsmall|\bsplash\b|creative|\bvideo\b|\bimage\b|\bbild(bank)?\b|thumbnail|display.?template|ad.?template|brand.?channel|korr.{0,20}(godk.nd|skickad|till.?kund)|egen.?bildbank/ },
   { name:'Email & Notifications',     color:'#ec4899', kw:/\bemail\b|\bsms\b|notification|errormessage|mailslurp/ },
   { name:'Access & Permissions',      color:'#fb923c', kw:/\bpermission\b|403|\baccess\b.{0,20}denied|unauthorized/ },
   { name:'Feature Request',           color:'#a855f7', kw:/feature.?request|enhancement|new.?feature|user.?story|improvement/ },
@@ -576,26 +581,26 @@ const RULES = [
 // ─────────────────────────────────────────────────────
 
 const TAG_MAP = [
-  { kw:/spider|datasource|crawl/,   cat:'Spider & Data Source' },
-  { kw:/linkedin/,                  cat:'LinkedIn' },
-  { kw:/\bmeta\b|facebook/,         cat:'Meta / Facebook' },
-  { kw:/youtube/,                   cat:'YouTube' },
-  { kw:/pinmeto|pmt/,               cat:'PinMeTo' },
-  { kw:/bidtheatre/,                cat:'BidTheatre' },
-  { kw:/invoice|billing/,           cat:'Invoicing & Billing' },
-  { kw:/subscription/,              cat:'Subscription Management' },
-  { kw:/campaign|autoads/,          cat:'Campaign & Ad Management' },
-  { kw:/report|analytics/,          cat:'Reporting & Analytics' },
-  { kw:/\bapi\b|integration/,       cat:'API & Integration' },
-  { kw:/frontend|ui/,               cat:'Frontend & UI' },
-  { kw:/infrastructure|infra|deploy/,cat:'Infrastructure & Platform' },
-  { kw:/order|prospect/,            cat:'Prospect & Order Flow' },
-  { kw:/creative|template/,         cat:'Creatives & Templates' },
-  { kw:/email|notification/,        cat:'Email & Notifications' },
-  { kw:/permission|access/,         cat:'Access & Permissions' },
-  { kw:/\bbug\b|defect/,            cat:'Bug / Defect' },
-  { kw:/performance/,               cat:'Performance' },
-  { kw:/security/,                  cat:'Security' },
+  { kw:/spider|datasource|crawl|prospectkälla/,       cat:'Spider & Data Source' },
+  { kw:/linkedin/,                                    cat:'LinkedIn' },
+  { kw:/\bmeta\b|facebook/,                           cat:'Meta / Facebook' },
+  { kw:/youtube/,                                     cat:'YouTube' },
+  { kw:/pinmeto|pmt/,                                 cat:'PinMeTo' },
+  { kw:/bidtheatre/,                                  cat:'BidTheatre' },
+  { kw:/invoice|billing|periodsbudget|kostnadsst/,    cat:'Invoicing & Billing' },
+  { kw:/subscription/,                                cat:'Subscription Management' },
+  { kw:/campaign|autoads|kampanj|annons|geo|pmax/,    cat:'Campaign & Ad Management' },
+  { kw:/report|analytics|rapportering/,               cat:'Reporting & Analytics' },
+  { kw:/\bapi\b|integration/,                         cat:'API & Integration' },
+  { kw:/frontend|ui|logotyp/,                         cat:'Frontend & UI' },
+  { kw:/infrastructure|infra|deploy|aks|cluster/,     cat:'Infrastructure & Platform' },
+  { kw:/order|prospect|kund|beställ|uppstart/,        cat:'Prospect & Order Flow' },
+  { kw:/creative|template|annonsmall|bildbank|korr/,  cat:'Creatives & Templates' },
+  { kw:/email|notification/,                          cat:'Email & Notifications' },
+  { kw:/permission|access/,                           cat:'Access & Permissions' },
+  { kw:/\bbug\b|defect/,                              cat:'Bug / Defect' },
+  { kw:/performance/,                                 cat:'Performance' },
+  { kw:/security/,                                    cat:'Security' },
 ];
 
 function categorize(title, desc, type, tags) {
@@ -673,6 +678,8 @@ const SUB_RULES = {
     { name:'Video / Carousel Issues',       kw:/video|carousel|thumbnail|black.{0,10}thumb|single.{0,10}media/ },
   ],
   'Invoicing & Billing': [
+    { name:'Period Budget Setup',            kw:/periodsbudget/ },
+    { name:'Cost Centre',                    kw:/kostnadsst\w{1,6}lle/ },
     { name:'Line Item Not Created',          kw:/line.?item.{0,30}not.{0,10}creat|no.{0,10}line.?item|missing.{0,10}line.?item|line.?item.{0,20}missing/ },
     { name:'Incorrect / Duplicate Items',    kw:/incorrect.{0,20}line|duplicate.{0,20}line|wrong.{0,20}amount|duplicate.{0,20}item|incorrect.{0,20}amount|over.{0,10}charge|under.{0,10}charge/ },
     { name:'UTC / Scheduling Bug',           kw:/utc|scheduled.{0,20}future|scheduling.{0,20}fail|month.?end|last.{0,10}day/ },
@@ -686,6 +693,7 @@ const SUB_RULES = {
     { name:'Subscription Create / Update Error', kw:/creat.{0,20}subscript|update.{0,20}subscript|subscript.{0,20}error|no.{0,20}budget.?period|budgetperiod/ },
   ],
   'Campaign & Ad Management': [
+    { name:'Campaign Setup (Onboarding)',      kw:/kampanj.{0,15}skapad|geo.{0,10}upplagd|geostyrning|bid.?strategi.{0,15}skapad|kontrollera.{0,20}annons/ },
     { name:'No Ads / Silent Delivery Failure', kw:/no.{0,10}ad|not.{0,20}deliver|silent.{0,20}fail|no.{0,15}creative|adcreative/ },
     { name:'Campaign Creation Failure',        kw:/fail.{0,20}creat|not.{0,20}creat|creation.{0,20}fail|campaign.{0,20}fail/ },
     { name:'Always-On / AutoAds Issues',       kw:/always.?on|autoads|auto.?ads/ },
@@ -694,6 +702,7 @@ const SUB_RULES = {
     { name:'Campaign Config / Adjustment',     kw:/adjust|config|setting|change/ },
   ],
   'Reporting & Analytics': [
+    { name:'Monthly Reporting Setup',     kw:/rapportering.{0,20}skapad|m.{0,3}nadsrapportering/ },
     { name:'Partner Reporting Errors',    kw:/partner.{0,20}report|report.{0,20}email|mailslurp/ },
     { name:'Overdelivery Investigation',  kw:/overdeliver|over.{0,10}deliver|impression.{0,20}spike|telemetri/ },
     { name:'Statistics API Failures',     kw:/statistic.{0,20}api|statistic.{0,20}fail|500.{0,20}statistic|load.{0,20}statistic/ },
@@ -714,6 +723,8 @@ const SUB_RULES = {
     { name:'General UI Bug',         kw:/render|display|broken.{0,20}ui|ui.{0,20}bug|not.{0,20}show|not.{0,20}visible|orderpage/ },
   ],
   'Infrastructure & Platform': [
+    { name:'Kubernetes / AKS',           kw:/\baks\b|kubernetes|cluster|version.{0,15}upgrade/ },
+    { name:'Dependency Updates',         kw:/dependabot|depend.{0,10}bot|dependency.{0,15}upgrad/ },
     { name:'CI / Deployment Failures',   kw:/deploy|pipeline|ci.{0,10}fail|build.{0,20}fail|auto.?mapper/ },
     { name:'Data Integrity Issues',      kw:/stale.{0,20}data|data.{0,20}integrity|duplicate.{0,20}data/ },
     { name:'Azure Function / PDF',       kw:/azure.?function|pdf.{0,20}render|asset.{0,20}process|taskcancel/ },
@@ -721,14 +732,18 @@ const SUB_RULES = {
     { name:'Performance / Errors',       kw:/500|rate.?limit|gateway|timeout|slow/ },
   ],
   'Prospect & Order Flow': [
+    { name:'Client Setup (Onboarding)',   kw:/kund.{0,12}skapad|bekr.{1,4}fta.{0,15}best.{1,4}ll|uppstart|informera.{0,20}(kund|s.ljare|live)|meddela.{0,20}(kund|s.ljare)|l.gg.{0,8}till.{0,20}(id\b|nr\b|bm|account|konto)|externt.?id|bmnr/ },
     { name:'Duplicate Prospects / Users', kw:/duplicate.{0,20}prospect|duplicate.{0,20}user|duplicate.{0,20}creat/ },
-    { name:'Order / Draft Creation Bugs', kw:/order.{0,20}creat|draft.{0,20}creat|orderlink|order.{0,20}page|orderpage|weborder/ },
+    { name:'Order / Draft Creation Bugs', kw:/order.{0,20}creat|draft.{0,20}creat|orderlink|order.{0,20}page|orderpage|weborder|best.{1,4}llning/ },
     { name:'On Demand Flow Issues',       kw:/on.?demand/ },
     { name:'Prospect Source / Filter',    kw:/prospect.?source|filter.{0,20}prospect/ },
     { name:'Webshop / Gateway',           kw:/webshop|gateway|sms.{0,20}weborder|staging.{0,20}gateway/ },
     { name:'Access / Reseller Config',    kw:/reseller|trusted.?user|jobbrella|tenant|not.{0,20}connect/ },
   ],
   'Creatives & Templates': [
+    { name:'Ad Template (Annonsmall)',     kw:/annonsmall/ },
+    { name:'Correction / Proofing',        kw:/korr.{0,20}(godk.nd|skickad|till.?kund)/ },
+    { name:'Image / Bildbank',             kw:/bildbank|bilder.{0,10}till|egen.?bildbank/ },
     { name:'Display Template Regressions', kw:/display.{0,20}template|template.{0,20}regress|restore.?flat|header.{0,20}broken/ },
     { name:'Splash / Image Issues',        kw:/splash|image.{0,20}issue|image.{0,20}fail|403.{0,20}image|random.{0,20}image|image.{0,20}upload/ },
     { name:'Video Template Issues',        kw:/video.{0,20}template|video.{0,20}static|video.{0,20}fail|video.{0,20}creat/ },
@@ -788,7 +803,7 @@ function getSubArea(catName, title, desc) {
 // ══════════════════════════════════════════════════
 // STATE
 // ══════════════════════════════════════════════════
-const S = { org:'bifirm', project:'SpiderAds', pat:'' };
+const S = { org:'bifirm', project:'SpiderAds', pat:'', claudeKey:'' };
 let catCI=null, openCI=null;
 
 // ══════════════════════════════════════════════════
@@ -829,6 +844,7 @@ async function handleConnect() {
   if (!org||!proj||!pat) { showConnErr('Organisation, Project and PAT are all required.'); return; }
 
   S.org=org; S.project=proj; S.pat=pat;
+  S.claudeKey = document.getElementById('claudeKeyInp').value.trim();
   setBusy('connectBtn','connectTxt','connectSpin', true, 'Connecting…');
   hideConnErr(); startLB();
 
@@ -905,10 +921,10 @@ async function runAnalysis() {
     setProgress(2, `Loading ${ids.length} ticket details…`, '');
     const tickets = await fetchDetails(ids, (done,tot) => setLog(`${done} / ${tot} loaded`));
 
-    // Step 3 — categorise + render
-    setProgress(3, 'Categorising and building dashboard…', '');
+    // Step 3 — categorise + render (AI fallback if key provided)
+    setProgress(3, 'Categorising and building dashboard…', S.claudeKey ? 'AI layer enabled for unmatched tickets' : '');
     await sleep(80);
-    const { categories, insights } = processTickets(tickets, area);
+    const { categories, insights } = await processTickets(tickets, area);
     closeProg();
     renderAll(tickets, categories, insights, from, to, area);
     setStatus('live');
@@ -990,11 +1006,28 @@ async function fetchDetails(ids, onProg) {
 // ══════════════════════════════════════════════════
 // PROCESS — categorise (using title + desc) + insights
 // ══════════════════════════════════════════════════
-function processTickets(tickets, area) {
+async function processTickets(tickets, area) {
   tickets.forEach(t => {
     t.category = categorize(t.title, t.desc, t.type, t.tags);
     t.subArea  = getSubArea(t.category, t.title, t.desc);
   });
+
+  // AI fallback — only send tickets still in "Other" to Claude Haiku
+  if (S.claudeKey) {
+    const unmatched = tickets.filter(t => t.category === 'Other');
+    if (unmatched.length > 0) {
+      setProgress(3, `AI classifying ${unmatched.length} unmatched tickets…`, 'Batching to Claude Haiku');
+      const aiResults = await aiCategorize(unmatched);
+      aiResults.forEach(r => {
+        const t = tickets.find(x => x.id === r.id);
+        if (t && r.cat && r.cat !== 'Other') {
+          t.category = r.cat;
+          t.subArea  = r.sub && r.sub !== 'General' ? r.sub : getSubArea(r.cat, t.title, t.desc);
+          t.aiCat    = true;
+        }
+      });
+    }
+  }
 
   // Group by category — only categories present in data appear
   const categories = {};
@@ -1006,6 +1039,57 @@ function processTickets(tickets, area) {
 
   const insights = generateInsights(tickets, categories);
   return { categories, insights };
+}
+
+async function aiCategorize(tickets) {
+  const catList  = RULES.filter(r => r.kw).map(r => r.name);
+  const subHints = Object.entries(SUB_RULES)
+    .map(([cat, rules]) => `${cat}: ${rules.map(r => r.name).join(', ')}`)
+    .join('\n');
+
+  const SYS = `You classify tickets for SpiderAds (digital ad platform, Swedish/English mix).
+Categories: ${catList.join(', ')}.
+Sub-areas:\n${subHints}
+Reply ONLY with a JSON array: [{"id":N,"cat":"Category","sub":"Sub-area"}]
+Use "Other" only if truly unclassifiable. "sub" must match an existing sub-area name or "General".`;
+
+  const BATCH = 50;
+  const results = [];
+
+  for (let i = 0; i < tickets.length; i += BATCH) {
+    const batch = tickets.slice(i, i + BATCH);
+    const userMsg = JSON.stringify(
+      batch.map(t => ({ id: t.id, t: t.title.slice(0, 90), tp: t.type }))
+    );
+    setLog(`AI: classifying ${Math.min(i + BATCH, tickets.length)} / ${tickets.length}`);
+
+    try {
+      const resp = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': S.claudeKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 1024,
+          system: SYS,
+          messages: [{ role: 'user', content: userMsg }]
+        })
+      });
+      if (!resp.ok) { console.warn('AI batch HTTP', resp.status); continue; }
+      const data  = await resp.json();
+      const text  = data.content?.[0]?.text || '';
+      const match = text.match(/\[[\s\S]*\]/);
+      if (match) results.push(...JSON.parse(match[0]));
+    } catch(e) {
+      console.warn('AI batch failed', e);
+    }
+  }
+
+  return results;
 }
 
 function generateInsights(tickets, cats) {
