@@ -672,14 +672,14 @@ const RULES = [
   { name:'Reporting & Analytics',     color:'#10b981', kw:/\breport\b|rapportering|m.{0,3}nadsrapportering|statistic|telemetri|overdelivery|insights|reach.*frequency|partner.?report|dashboard.{0,15}(metric|data|analytic)/ },
   { name:'API & Integration',         color:'#06b6d4', kw:/\bapi\b|update.?linkedin|update.?meta|update.?google.?ads|influeris|integration|webhook|endpoint|sdk.?updat|library.?updat/ },
   { name:'Frontend & UI',             color:'#14b8a6', kw:/preview|frontend|\blisting\b|\brender\b|customer.?view|campaign.?view|campaign.?page|\bsorting\b|orderpage|vite|language.?config|ui.?bug|user.?interface|logotyp|.ndra.{0,15}(logotyp|f.rg|logo)|ux.?improv|design.?system/ },
-  { name:'Infrastructure & Platform', color:'#6b7280', kw:/deployment|pipeline|\bstaging\b|azure.?function|\bgateway\b|rate.?limit|\bblob\b|pdf.?render|asset.?processing|auto.?mapper|infrastructure|\baks\b|kubernetes|cluster|dependabot|version.?upgrade|grafana|prometheus|terraform|helm|\bdocker\b|container.?(?:ize|iz|is)|observab|monitor(?:ing)?|alert(?:ing)?|kibana|elastic|vault|secret.?management|certif(?:icat)?|ingress|service.?mesh|ci.?cd|github.?action|build.?agent|runner/ },
+  { name:'Infrastructure & Platform', color:'#6b7280', kw:/deployment|\bdeploy\b|\bmigrat\b|pipeline|\bstaging\b|azure.?function|\bgateway\b|rate.?limit|\bblob\b|pdf.?render|asset.?processing|auto.?mapper|infrastructure|\baks\b|kubernetes|cluster|dependabot|version.?upgrade|grafana|prometheus|terraform|helm|\bdocker\b|container.?(?:ize|iz|is)|observab|monitor(?:ing)?|alert(?:ing)?|kibana|elastic|vault|secret.?management|certif(?:icat)?|ingress|service.?mesh|ci.?cd|github.?action|build.?agent|runner/ },
   { name:'Prospect & Order Flow',     color:'#3b82f6', kw:/\border\b|weborder|webshop|\bvisma\b|orderlink|\bprospect\b|duplicate|reseller|trusted.?user|jobbrella|\btenant\b|kund.{0,12}skapad|best.{1,4}llning|best.{1,4}llare|bekr.{1,4}fta|uppstart|informera.{0,20}(kund|s.ljare|live)|meddela.{0,20}(kund|s.ljare)|l.gg.{0,8}till.{0,20}(id\b|nr\b|bm|account|konto)|externt.?id|bmnr/ },
   { name:'Creatives & Templates',     color:'#d97706', kw:/\btemplate\b|annonsmall|\bsplash\b|creative|\bvideo\b|\bimage\b|\bbild(bank)?\b|thumbnail|display.?template|ad.?template|brand.?channel|korr.{0,20}(godk.nd|skickad|till.?kund)|egen.?bildbank/ },
   { name:'Email & Notifications',     color:'#ec4899', kw:/\bemail\b|\bsms\b|notification|errormessage|mailslurp/ },
   { name:'Access & Permissions',      color:'#fb923c', kw:/\bpermission\b|403|\baccess\b.{0,20}denied|unauthorized/ },
   { name:'Security',                  color:'#f43f5e', kw:/security|vulnerabilit|xss|inject(?:ion)?|penetration|pentest|cve|owasp/ },
   { name:'Performance',               color:'#84cc16', kw:/performance|slow|timeout|latency|memory.?leak|cpu.?spike|load.?time|response.?time|throughput/ },
-  { name:'Feature Request',           color:'#a855f7', kw:/feature.?request|\benhancement\b|new.?feature|user.?story|\bepic\b|\bimprovement\b|\bimplement\b|enable.{0,20}(support|feature|function)|\badd.{0,8}support\b|rollout|\bspike\b|\bpoc\b|proof.?of.?concept|research.{0,10}(into|for|option)|feasibilit|discovery|as.{0,5}a.{0,15}(user|admin|manager|seller|partner)|i.{0,5}want.{0,10}to\b|so.{0,5}that.{0,10}(i|we)\b/ },
+  { name:'Feature Request',           color:'#a855f7', kw:/feature.?request|\benhanc(?:e|ing|ed|ement)|\bimprove\b|\bimproving\b|\bimprovement\b|\bimproved\b|\bnew.?feature\b|user.?story|\bepic\b|\bimplement\b|enable.{0,20}(support|feature|function)|\badd.{0,8}support\b|rollout|\bspike\b|\bpoc\b|proof.?of.?concept|research.{0,10}(into|for|option)|feasibilit|discovery|as.{0,5}a.{0,15}(user|admin|manager|seller|partner)|i.{0,5}want.{0,10}to\b|so.{0,5}that.{0,10}(i|we)\b/ },
   { name:'Bug \/ Defect',             color:'#ef4444', kw:/\bbug\b|\bdefect\b|crash|exception|null.?ref|stack.?trace|unhandled|regression|broken.{0,15}(after|since|by)|not.{0,10}work(?:ing)?|fail(?:s|ed|ing)(?!.{0,15}to.{0,15}create)/ },
   { name:'Documentation',             color:'#94a3b8', kw:/documentation|\bdocs\b|\breadme\b|\bwiki\b|\bguide\b|how.?to|runbook|playbook/ },
   { name:'Other',                     color:'#374151', kw:null },
@@ -707,7 +707,7 @@ const TAG_MAP = [
   { kw:/report|analytics|rapportering/,                      cat:'Reporting & Analytics' },
   { kw:/\bapi\b|integration|webhook/,                        cat:'API & Integration' },
   { kw:/frontend|ui|logotyp/,                                cat:'Frontend & UI' },
-  { kw:/infrastructure|infra|deploy|aks|cluster|kubernetes|docker|terraform|grafana|prometheus/, cat:'Infrastructure & Platform' },
+  { kw:/infrastructure|infra|deploy|migrat|aks|cluster|kubernetes|docker|terraform|grafana|prometheus/, cat:'Infrastructure & Platform' },
   { kw:/order|prospect|kund|beställ|uppstart/,               cat:'Prospect & Order Flow' },
   { kw:/creative|template|annonsmall|bildbank|korr/,         cat:'Creatives & Templates' },
   { kw:/email|notification/,                                 cat:'Email & Notifications' },
@@ -757,7 +757,7 @@ function categorize(title, desc, type, tags) {
 
   // WorkItemType semantic fallback — better than 'Other' when no keywords match
   if (/user.?story|epic|\bfeature\b|enhancement|improvement|user.?requirement/.test(wType)) return 'Feature Request';
-  if (/task|action.?item|to.?do/.test(wType) && /deploy|infra|platform|ops|devops|ci|cd/.test((title||'').toLowerCase())) return 'Infrastructure & Platform';
+  if (/task|action.?item|to.?do/.test(wType) && /deploy|infra|platform|ops|devops|ci|cd|migrat/.test((title||'').toLowerCase())) return 'Infrastructure & Platform';
   if (/\bbug\b|defect|issue|problem/.test(wType)) return 'Bug / Defect';
 
   return 'Other';
