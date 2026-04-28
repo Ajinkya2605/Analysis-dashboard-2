@@ -669,19 +669,19 @@ const RULES = [
   { name:'Invoicing & Billing',       color:'#fbbf24', kw:/invoice|line.?item|billing|budget.?period|budgetperiod|fakturering|uninvoiced|monthly.?arrears|negative.?line|billing.?type|periodsbudget|kostnadsst\w{1,6}lle|faktura/ },
   { name:'Subscription Management',  color:'#8b5cf6', kw:/subscription|end.?campaign|cancel.?subscription/ },
   { name:'Campaign & Ad Management', color:'#f97316', kw:/campaign|kampanj|\bannons(?!mall)\w*\b|ad.?set|adcreative|\bno.?ads?\b|failed.?to.?create|always.?on|autoads|on.?demand|veckoboost|\bbatch\b|geo.{0,8}upplagd|geostyrning|bid.?strategi|pmax|google.?pmax|kontrollera.{0,25}annons/ },
-  { name:'Reporting & Analytics',     color:'#10b981', kw:/\breport\b|rapportering|m.{0,3}nadsrapportering|statistic|telemetri|overdelivery|insights|reach.*frequency|partner.?report/ },
-  { name:'API & Integration',         color:'#06b6d4', kw:/\bapi\b|update.?linkedin|update.?meta|update.?google.?ads|influeris|integration/ },
-  { name:'Frontend & UI',             color:'#14b8a6', kw:/preview|frontend|\blisting\b|\brender\b|customer.?view|campaign.?view|campaign.?page|\bsorting\b|orderpage|vite|language.?config|ui.?bug|user.?interface|logotyp|.ndra.{0,15}(logotyp|f.rg|logo)/ },
-  { name:'Infrastructure & Platform', color:'#6b7280', kw:/deployment|pipeline|\bstaging\b|azure.?function|\bgateway\b|rate.?limit|\bblob\b|pdf.?render|asset.?processing|auto.?mapper|infrastructure|\baks\b|kubernetes|cluster|dependabot|version.?upgrade/ },
+  { name:'Reporting & Analytics',     color:'#10b981', kw:/\breport\b|rapportering|m.{0,3}nadsrapportering|statistic|telemetri|overdelivery|insights|reach.*frequency|partner.?report|dashboard.{0,15}(metric|data|analytic)/ },
+  { name:'API & Integration',         color:'#06b6d4', kw:/\bapi\b|update.?linkedin|update.?meta|update.?google.?ads|influeris|integration|webhook|endpoint|sdk.?updat|library.?updat/ },
+  { name:'Frontend & UI',             color:'#14b8a6', kw:/preview|frontend|\blisting\b|\brender\b|customer.?view|campaign.?view|campaign.?page|\bsorting\b|orderpage|vite|language.?config|ui.?bug|user.?interface|logotyp|.ndra.{0,15}(logotyp|f.rg|logo)|ux.?improv|design.?system/ },
+  { name:'Infrastructure & Platform', color:'#6b7280', kw:/deployment|pipeline|\bstaging\b|azure.?function|\bgateway\b|rate.?limit|\bblob\b|pdf.?render|asset.?processing|auto.?mapper|infrastructure|\baks\b|kubernetes|cluster|dependabot|version.?upgrade|grafana|prometheus|terraform|helm|\bdocker\b|container.?(?:ize|iz|is)|observab|monitor(?:ing)?|alert(?:ing)?|kibana|elastic|vault|secret.?management|certif(?:icat)?|ingress|service.?mesh|ci.?cd|github.?action|build.?agent|runner/ },
   { name:'Prospect & Order Flow',     color:'#3b82f6', kw:/\border\b|weborder|webshop|\bvisma\b|orderlink|\bprospect\b|duplicate|reseller|trusted.?user|jobbrella|\btenant\b|kund.{0,12}skapad|best.{1,4}llning|best.{1,4}llare|bekr.{1,4}fta|uppstart|informera.{0,20}(kund|s.ljare|live)|meddela.{0,20}(kund|s.ljare)|l.gg.{0,8}till.{0,20}(id\b|nr\b|bm|account|konto)|externt.?id|bmnr/ },
   { name:'Creatives & Templates',     color:'#d97706', kw:/\btemplate\b|annonsmall|\bsplash\b|creative|\bvideo\b|\bimage\b|\bbild(bank)?\b|thumbnail|display.?template|ad.?template|brand.?channel|korr.{0,20}(godk.nd|skickad|till.?kund)|egen.?bildbank/ },
   { name:'Email & Notifications',     color:'#ec4899', kw:/\bemail\b|\bsms\b|notification|errormessage|mailslurp/ },
   { name:'Access & Permissions',      color:'#fb923c', kw:/\bpermission\b|403|\baccess\b.{0,20}denied|unauthorized/ },
-  { name:'Feature Request',           color:'#a855f7', kw:/feature.?request|enhancement|new.?feature|user.?story|improvement/ },
-  { name:'Bug \/ Defect',             color:'#ef4444', kw:/\bbug\b|\bdefect\b|crash|exception|error|broken|fix/ },
-  { name:'Performance',               color:'#84cc16', kw:/performance|slow|timeout|latency|memory|cpu|load.?time/ },
-  { name:'Security',                  color:'#f43f5e', kw:/security|vulnerability|auth|oauth|ssl|tls|certificate|xss|injection/ },
-  { name:'Documentation',             color:'#94a3b8', kw:/documentation|docs\b|readme|wiki|guide|howto/ },
+  { name:'Security',                  color:'#f43f5e', kw:/security|vulnerabilit|xss|inject(?:ion)?|penetration|pentest|cve|owasp/ },
+  { name:'Performance',               color:'#84cc16', kw:/performance|slow|timeout|latency|memory.?leak|cpu.?spike|load.?time|response.?time|throughput/ },
+  { name:'Feature Request',           color:'#a855f7', kw:/feature.?request|\benhancement\b|new.?feature|user.?story|\bepic\b|\bimprovement\b|\bimplement\b|enable.{0,20}(support|feature|function)|\badd.{0,8}support\b|rollout|\bspike\b|\bpoc\b|proof.?of.?concept|research.{0,10}(into|for|option)|feasibilit|discovery|as.{0,5}a.{0,15}(user|admin|manager|seller|partner)|i.{0,5}want.{0,10}to\b|so.{0,5}that.{0,10}(i|we)\b/ },
+  { name:'Bug \/ Defect',             color:'#ef4444', kw:/\bbug\b|\bdefect\b|crash|exception|null.?ref|stack.?trace|unhandled|regression|broken.{0,15}(after|since|by)|not.{0,10}work(?:ing)?|fail(?:s|ed|ing)(?!.{0,15}to.{0,15}create)/ },
+  { name:'Documentation',             color:'#94a3b8', kw:/documentation|\bdocs\b|\breadme\b|\bwiki\b|\bguide\b|how.?to|runbook|playbook/ },
   { name:'Other',                     color:'#374151', kw:null },
 ];
 
@@ -695,26 +695,27 @@ const RULES = [
 // ─────────────────────────────────────────────────────
 
 const TAG_MAP = [
-  { kw:/spider|datasource|crawl|prospectkälla/,       cat:'Spider & Data Source' },
-  { kw:/linkedin/,                                    cat:'LinkedIn' },
-  { kw:/\bmeta\b|facebook/,                           cat:'Meta / Facebook' },
-  { kw:/youtube/,                                     cat:'YouTube' },
-  { kw:/pinmeto|pmt/,                                 cat:'PinMeTo' },
-  { kw:/bidtheatre/,                                  cat:'BidTheatre' },
-  { kw:/invoice|billing|periodsbudget|kostnadsst/,    cat:'Invoicing & Billing' },
-  { kw:/subscription/,                                cat:'Subscription Management' },
-  { kw:/campaign|autoads|kampanj|annons|geo|pmax/,    cat:'Campaign & Ad Management' },
-  { kw:/report|analytics|rapportering/,               cat:'Reporting & Analytics' },
-  { kw:/\bapi\b|integration/,                         cat:'API & Integration' },
-  { kw:/frontend|ui|logotyp/,                         cat:'Frontend & UI' },
-  { kw:/infrastructure|infra|deploy|aks|cluster/,     cat:'Infrastructure & Platform' },
-  { kw:/order|prospect|kund|beställ|uppstart/,        cat:'Prospect & Order Flow' },
-  { kw:/creative|template|annonsmall|bildbank|korr/,  cat:'Creatives & Templates' },
-  { kw:/email|notification/,                          cat:'Email & Notifications' },
-  { kw:/permission|access/,                           cat:'Access & Permissions' },
-  { kw:/\bbug\b|defect/,                              cat:'Bug / Defect' },
-  { kw:/performance/,                                 cat:'Performance' },
-  { kw:/security/,                                    cat:'Security' },
+  { kw:/spider|datasource|crawl|prospectkälla/,              cat:'Spider & Data Source' },
+  { kw:/linkedin/,                                           cat:'LinkedIn' },
+  { kw:/\bmeta\b|facebook/,                                  cat:'Meta / Facebook' },
+  { kw:/youtube/,                                            cat:'YouTube' },
+  { kw:/pinmeto|pmt/,                                        cat:'PinMeTo' },
+  { kw:/bidtheatre/,                                         cat:'BidTheatre' },
+  { kw:/invoice|billing|periodsbudget|kostnadsst/,           cat:'Invoicing & Billing' },
+  { kw:/subscription/,                                       cat:'Subscription Management' },
+  { kw:/campaign|autoads|kampanj|annons|geo|pmax/,           cat:'Campaign & Ad Management' },
+  { kw:/report|analytics|rapportering/,                      cat:'Reporting & Analytics' },
+  { kw:/\bapi\b|integration|webhook/,                        cat:'API & Integration' },
+  { kw:/frontend|ui|logotyp/,                                cat:'Frontend & UI' },
+  { kw:/infrastructure|infra|deploy|aks|cluster|kubernetes|docker|terraform|grafana|prometheus/, cat:'Infrastructure & Platform' },
+  { kw:/order|prospect|kund|beställ|uppstart/,               cat:'Prospect & Order Flow' },
+  { kw:/creative|template|annonsmall|bildbank|korr/,         cat:'Creatives & Templates' },
+  { kw:/email|notification/,                                 cat:'Email & Notifications' },
+  { kw:/permission|access/,                                  cat:'Access & Permissions' },
+  { kw:/security|vulnerability/,                             cat:'Security' },
+  { kw:/feature|story|epic|enhancement|improvement/,         cat:'Feature Request' },
+  { kw:/\bbug\b|defect/,                                     cat:'Bug / Defect' },
+  { kw:/performance/,                                        cat:'Performance' },
 ];
 
 function categorize(title, desc, type, tags) {
@@ -753,6 +754,11 @@ function categorize(title, desc, type, tags) {
 
   const ranked = Object.entries(scores).sort((a,b) => b[1]-a[1]);
   if (ranked.length) return ranked[0][0];
+
+  // WorkItemType semantic fallback — better than 'Other' when no keywords match
+  if (/user.?story|epic|\bfeature\b|enhancement|improvement|user.?requirement/.test(wType)) return 'Feature Request';
+  if (/task|action.?item|to.?do/.test(wType) && /deploy|infra|platform|ops|devops|ci|cd/.test((title||'').toLowerCase())) return 'Infrastructure & Platform';
+  if (/\bbug\b|defect|issue|problem/.test(wType)) return 'Bug / Defect';
 
   return 'Other';
 }
@@ -1571,15 +1577,16 @@ function saveReport() {
   if (!G.tickets || !G.tickets.length) return;
 
   const fmtD = d => new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
-  const dateLabel = `${fmtD(G.from)} – ${fmtD(G.to)}`;
+  const dateLabel  = `${fmtD(G.from)} – ${fmtD(G.to)}`;
   const boardLabel = G.area ? G.area.split('\\').pop() : 'All Boards';
-  const aiNote = G.aiUsed ? ' · AI-assisted classification enabled' : '';
+  const aiNote     = G.aiUsed ? ' · AI-assisted' : '';
+  const pct        = (a,b) => b ? Math.round(a/b*100) : 0;
 
   // Chart data
-  const catColors = G.catNames.map(c => catColor(c));
-  const catTotals = G.catNames.map(c => G.flatCats[c].length);
-  const catOpens  = G.catNames.map(c => G.flatCats[c].filter(t => isOpen(t.state)).length);
-  const catClosed = G.catNames.map(c => G.flatCats[c].filter(t => !isOpen(t.state)).length);
+  const catColors  = G.catNames.map(c => catColor(c));
+  const catTotals  = G.catNames.map(c => G.flatCats[c].length);
+  const catOpens   = G.catNames.map(c => G.flatCats[c].filter(t => isOpen(t.state)).length);
+  const catClosed  = G.catNames.map(c => G.flatCats[c].filter(t => !isOpen(t.state)).length);
 
   // Insights HTML
   const insHtml = G.insights.map(i => `
@@ -1588,64 +1595,88 @@ function saveReport() {
       <div class="ins-txt">${i.text}</div>
     </div>`).join('');
 
-  // Accordion HTML — categories + sub-areas + tickets
-  const pct = (a,b) => b ? Math.round(a/b*100) : 0;
-  const accHtml = G.catNames.map(cat => {
-    const subs = G.categories[cat];
-    const allT = G.flatCats[cat];
-    const col  = catColor(cat);
-    const open = allT.filter(t=>isOpen(t.state)).length;
-    const bugs = allT.filter(t=>isBug(t.type)).length;
-    const subHtml = Object.entries(subs).map(([subName, tix]) => {
-      const sOpen = tix.filter(t=>isOpen(t.state)).length;
-      const tRows = tix.map(t => {
-        const stCls = isOpen(t.state)?'so':'sc';
-        const aiMark = t.aiCat ? ' <span style="color:#a855f7;font-size:.58rem">✦AI</span>' : '';
-        return `<div class="t-row">
-          <a class="tid" href="https://dev.azure.com/${G.org}/${G.project}/_workitems/edit/${t.id}" target="_blank">#${t.id}</a>
-          <span class="ttl">${t.title.slice(0,90)}${aiMark}</span>
-          <span class="ttype">${t.type}</span>
-          <span class="tst ${stCls}">${t.state}</span>
+  // State styling
+  const stateClass = st => {
+    const s = (st||'').toLowerCase();
+    if (['closed','resolved','done'].includes(s)) return 'sc';
+    if (['new','active','approved','in progress','committed'].includes(s)) return 'so';
+    if (['testing','in testing','in review'].includes(s)) return 'st';
+    return 'so';
+  };
+
+  // Accordion HTML — full interactive
+  const accHtml = G.catNames.map((cat, ci) => {
+    const subs    = G.categories[cat];
+    const allT    = G.flatCats[cat];
+    const col     = catColor(cat);
+    const openCnt = allT.filter(t => isOpen(t.state)).length;
+    const bugCnt  = allT.filter(t => isBug(t.type)).length;
+    const subCount= Object.keys(subs).length;
+    const catId   = 'cat-' + cat.replace(/[^a-z0-9]/gi,'').toLowerCase();
+
+    const subHtml = Object.entries(subs).map(([subName, tix], si) => {
+      const sOpen  = tix.filter(t => isOpen(t.state)).length;
+      const sBugs  = tix.filter(t => isBug(t.type)).length;
+      const subId  = catId + '-sub' + si;
+      const tRows  = tix.map(t => {
+        const aiMark = t.aiCat ? ' <span class="ai-mark">✦AI</span>' : '';
+        const dot    = isOpen(t.state)
+          ? '<span class="open-dot"></span>'
+          : '<span class="closed-dot"></span>';
+        return `<div class="ticket-row">
+          ${dot}
+          <a class="ticket-id" href="https://dev.azure.com/${G.org}/${G.project}/_workitems/edit/${t.id}" target="_blank">#${t.id}</a>
+          <span class="ticket-title">${t.title.slice(0,100)}${aiMark}</span>
+          <span class="ticket-type">${t.type}</span>
+          <span class="ticket-state ${stateClass(t.state)}">${t.state}</span>
         </div>`;
       }).join('');
-      return `<div class="sub-area">
-        <div class="sub-hdr">
+
+      return `
+      <div class="sub-row" id="${subId}">
+        <div class="sub-trigger" onclick="toggleSub('${subId}')">
           <span class="sub-dot" style="background:${col}"></span>
-          <span class="sub-nm">${subName}</span>
-          <span class="sub-pill">${tix.length} tickets</span>
-          ${sOpen ? `<span class="sub-pill op">${sOpen} open</span>` : ''}
+          <span class="sub-name">${subName}</span>
+          <span class="sub-stats">
+            <span>${tix.length} <span class="sub-stat-label">tickets</span></span>
+            ${sBugs ? `<span class="amber">${sBugs} bugs</span>` : ''}
+            ${sOpen ? `<span class="red">${sOpen} open</span>` : ''}
+          </span>
+          <span class="sub-chevron">▶</span>
         </div>
-        <div class="sub-body">${tRows}</div>
+        <div class="ticket-panel">
+          <div class="ticket-list">${tRows}</div>
+        </div>
       </div>`;
     }).join('');
-    return `<div class="cat-card">
-      <div class="cat-hdr">
-        <div class="cat-bar" style="background:${col}"></div>
-        <div class="cat-inf">
-          <div class="cat-nm">${cat}</div>
-          <div class="cat-meta">${allT.length} tickets · ${Object.keys(subs).length} sub-areas · ${pct(bugs,allT.length)}% bug rate</div>
+
+    return `
+    <div class="cat-card" id="${catId}">
+      <div class="cat-trigger" onclick="toggleCat('${catId}')">
+        <div class="cat-color-bar" style="background:${col}"></div>
+        <div class="cat-info">
+          <div class="cat-name">${cat}</div>
+          <div class="cat-subtext">${allT.length} tickets · ${subCount} sub-areas · ${pct(bugCnt,allT.length)}% bug rate</div>
         </div>
-        <span class="pill">${allT.length}</span>
-        ${bugs ? `<span class="pill bg">${bugs} bugs</span>` : ''}
-        ${open ? `<span class="pill op">${open} open</span>` : ''}
+        <div class="cat-pills">
+          <span class="pill">${allT.length}</span>
+          ${bugCnt  ? `<span class="pill bugs-pill">${bugCnt} bugs</span>` : ''}
+          ${openCnt ? `<span class="pill open-pill">${openCnt} open</span>` : ''}
+        </div>
+        <span class="cat-chevron-icon">▶</span>
       </div>
-      ${subHtml}
+      <div class="cat-body-panel">
+        <div class="sub-list">${subHtml}</div>
+      </div>
     </div>`;
   }).join('');
 
-  const html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>SpiderAds Report — ${boardLabel} · ${fmtD(G.from)}</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"><\/script>
-<style>
-:root{--bg:#0d0f14;--surface:#13161e;--surface2:#1a1e28;--border:#252933;--text:#e8eaf0;--muted:#6b7280;--accent:#6366f1;--red:#ef4444;--amber:#f59e0b;--green:#10b981;--blue:#3b82f6;--purple:#a855f7;--font:'DM Sans',sans-serif;--mono:'DM Mono',monospace;}
+  // ── Inline CSS ───────────────────────────────────
+  const css = `
+:root{--bg:#0d0f14;--surface:#13161e;--surface2:#1a1e28;--border:#252933;--text:#e8eaf0;--muted:#6b7280;--accent:#6366f1;--red:#ef4444;--amber:#f59e0b;--green:#10b981;--blue:#3b82f6;--purple:#a855f7;--teal:#14b8a6;--font:'DM Sans',sans-serif;--mono:'DM Mono',monospace;}
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14px;line-height:1.6;min-height:100vh;}
-nav{position:sticky;top:0;z-index:100;background:rgba(13,15,20,.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 32px;height:56px;}
+nav{position:sticky;top:0;z-index:100;background:rgba(13,15,20,.96);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 32px;height:56px;}
 .nav-brand{font-weight:800;font-size:1.05rem;letter-spacing:-.3px;}.nav-brand em{color:var(--accent);font-style:normal;}
 .nav-links{display:flex;gap:4px;}.nav-links a{color:var(--muted);text-decoration:none;font-size:.78rem;font-weight:500;padding:5px 11px;border-radius:6px;transition:all .15s;}.nav-links a:hover{color:var(--text);background:var(--surface2);}
 .nav-meta{font-size:.7rem;color:var(--muted);font-family:var(--mono);}
@@ -1654,7 +1685,7 @@ nav{position:sticky;top:0;z-index:100;background:rgba(13,15,20,.95);backdrop-fil
 .hero-eyebrow{font-family:var(--mono);font-size:.68rem;color:var(--accent);letter-spacing:1.8px;text-transform:uppercase;margin-bottom:10px;}
 .hero h1{font-size:2rem;font-weight:700;letter-spacing:-.5px;line-height:1.2;margin-bottom:8px;}
 .hero h1 em{color:var(--accent);font-style:normal;}
-.hero-sub{color:var(--muted);font-size:.85rem;max-width:560px;line-height:1.7;}
+.hero-sub{color:var(--muted);font-size:.85rem;max-width:580px;line-height:1.7;}
 .kpi-strip{display:grid;grid-template-columns:repeat(8,1fr);border-bottom:1px solid var(--border);}
 .kpi-item{padding:18px 12px;border-right:1px solid var(--border);text-align:center;}.kpi-item:last-child{border-right:none;}
 .kv{font-size:1.5rem;font-weight:700;letter-spacing:-1px;line-height:1;font-family:var(--mono);}
@@ -1666,6 +1697,7 @@ nav{position:sticky;top:0;z-index:100;background:rgba(13,15,20,.95);backdrop-fil
 .charts-row{display:grid;grid-template-columns:1.5fr 1fr;gap:14px;margin-bottom:24px;}
 .cc{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 20px;}
 .cc h3{font-size:.7rem;font-weight:600;color:var(--muted);margin-bottom:12px;text-transform:uppercase;letter-spacing:.6px;font-family:var(--mono);}
+.chart-hint{font-size:.63rem;color:var(--accent);font-family:var(--mono);margin-top:7px;}
 .ins-section{margin-bottom:24px;}
 .ins-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;}
 .ins-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:13px 15px;}
@@ -1675,34 +1707,112 @@ nav{position:sticky;top:0;z-index:100;background:rgba(13,15,20,.95);backdrop-fil
 .ins-txt{font-size:.77rem;line-height:1.65;color:var(--text);}
 .drill{margin-bottom:24px;}
 .cat-list{display:flex;flex-direction:column;gap:8px;}
-.cat-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
-.cat-hdr{display:flex;align-items:center;gap:13px;padding:12px 16px;background:var(--surface);}
-.cat-bar{width:4px;height:28px;border-radius:2px;flex-shrink:0;}
-.cat-inf{flex:1;min-width:0;}
-.cat-nm{font-weight:600;font-size:.85rem;}
-.cat-meta{font-size:.67rem;color:var(--muted);margin-top:1px;}
-.pill{font-size:.6rem;font-family:var(--mono);padding:2px 7px;border-radius:20px;border:1px solid var(--border);color:var(--muted);white-space:nowrap;}
-.pill.op{background:rgba(239,68,68,.1);color:var(--red);border-color:rgba(239,68,68,.2);}
-.pill.bg{background:rgba(245,158,11,.08);color:var(--amber);border-color:rgba(245,158,11,.15);}
-.sub-area{border-top:1px solid var(--border);}
-.sub-hdr{display:flex;align-items:center;gap:9px;padding:8px 16px;background:var(--surface2);}
+.cat-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:border-color .15s;}
+.cat-card.open{border-color:var(--accent);}
+.cat-trigger{display:flex;align-items:center;gap:16px;padding:16px 20px;cursor:pointer;user-select:none;transition:background .12s;}
+.cat-trigger:hover{background:var(--surface2);}
+.cat-color-bar{width:4px;height:36px;border-radius:2px;flex-shrink:0;}
+.cat-info{flex:1;min-width:0;}
+.cat-name{font-weight:600;font-size:.9rem;}
+.cat-subtext{font-size:.7rem;color:var(--muted);margin-top:2px;}
+.cat-pills{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+.pill{font-size:.65rem;font-family:var(--mono);font-weight:500;padding:3px 9px;border-radius:20px;border:1px solid var(--border);color:var(--muted);}
+.pill.open-pill{background:rgba(239,68,68,.1);color:var(--red);border-color:rgba(239,68,68,.2);}
+.pill.bugs-pill{background:rgba(245,158,11,.08);color:var(--amber);border-color:rgba(245,158,11,.15);}
+.cat-chevron-icon{color:var(--muted);font-size:.65rem;transition:transform .2s;width:20px;text-align:center;flex-shrink:0;}
+.cat-card.open .cat-chevron-icon{transform:rotate(90deg);}
+.cat-body-panel{display:none;border-top:1px solid var(--border);}
+.cat-card.open .cat-body-panel{display:block;}
+.sub-list{padding:12px 16px;display:flex;flex-direction:column;gap:6px;}
+.sub-row{background:var(--surface2);border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.sub-row.open .sub-chevron{transform:rotate(90deg);}
+.sub-trigger{display:flex;align-items:center;gap:12px;padding:11px 16px;cursor:pointer;user-select:none;transition:background .1s;}
+.sub-trigger:hover{background:rgba(255,255,255,.03);}
 .sub-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
-.sub-nm{font-size:.79rem;font-weight:600;flex:1;min-width:0;}
-.sub-pill{font-size:.59rem;font-family:var(--mono);padding:2px 6px;border-radius:12px;border:1px solid var(--border);color:var(--muted);white-space:nowrap;}
-.sub-pill.op{background:rgba(239,68,68,.1);color:var(--red);border-color:rgba(239,68,68,.2);}
-.sub-body{border-top:1px solid var(--border);}
-.t-row{display:flex;align-items:baseline;gap:10px;padding:5px 16px;transition:background .1s;}
-.t-row:hover{background:rgba(255,255,255,.02);}
-.tid{font-family:var(--mono);font-size:.67rem;color:var(--accent);text-decoration:none;white-space:nowrap;}
-.tid:hover{text-decoration:underline;}
-.ttl{font-size:.74rem;flex:1;min-width:0;}
-.ttype{font-size:.62rem;color:var(--muted);white-space:nowrap;}
-.tst{font-size:.62rem;font-weight:600;white-space:nowrap;font-family:var(--mono);}
-.sc{color:var(--green);}.so{color:var(--red);}
-footer{text-align:center;color:var(--muted);font-size:.63rem;font-family:var(--mono);padding:20px;border-top:1px solid var(--border);}
-</style>
+.sub-name{font-size:.82rem;font-weight:600;flex:1;min-width:0;}
+.sub-stats{display:flex;gap:14px;font-family:var(--mono);font-size:.7rem;color:var(--muted);white-space:nowrap;}
+.sub-stats .red{color:var(--red);font-weight:600;}
+.sub-stats .amber{color:var(--amber);font-weight:600;}
+.sub-stat-label{color:var(--muted);font-weight:400;}
+.sub-chevron{color:var(--muted);font-size:.62rem;transition:transform .2s;width:14px;text-align:center;flex-shrink:0;}
+.ticket-panel{display:none;border-top:1px solid var(--border);}
+.sub-row.open .ticket-panel{display:block;}
+.ticket-list{padding:6px 0;}
+.ticket-row{display:flex;align-items:baseline;gap:10px;padding:6px 16px;transition:background .1s;}
+.ticket-row:hover{background:rgba(255,255,255,.02);}
+.open-dot{width:6px;height:6px;border-radius:50%;background:var(--red);flex-shrink:0;margin-top:5px;}
+.closed-dot{width:6px;height:6px;border-radius:50%;background:var(--border);flex-shrink:0;margin-top:5px;}
+.ticket-id{font-family:var(--mono);font-size:.68rem;color:var(--accent);text-decoration:none;white-space:nowrap;}
+.ticket-id:hover{text-decoration:underline;}
+.ticket-title{font-size:.76rem;flex:1;min-width:0;}
+.ticket-type{font-size:.63rem;color:var(--muted);white-space:nowrap;}
+.ticket-state{font-size:.63rem;font-weight:600;white-space:nowrap;font-family:var(--mono);}
+.sc{color:var(--green);}.so{color:var(--red);}.st{color:var(--amber);}
+.ai-mark{color:var(--purple);font-size:.58rem;margin-left:3px;}
+footer{text-align:center;color:var(--muted);font-size:.63rem;font-family:var(--mono);padding:20px 32px;border-top:1px solid var(--border);}`;
+
+  // ── Inline JS for report ─────────────────────────
+  const reportJs = `
+function toggleCat(id) {
+  document.getElementById(id).classList.toggle('open');
+}
+function toggleSub(id) {
+  document.getElementById(id).classList.toggle('open');
+}
+function scrollToCat(label) {
+  const id = 'cat-' + label.replace(/[^a-z0-9]/gi,'').toLowerCase();
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.add('open');
+  setTimeout(() => el.scrollIntoView({behavior:'smooth', block:'start'}), 60);
+}
+Chart.defaults.color='#6b7280';
+Chart.defaults.borderColor='#252933';
+const catNames=${JSON.stringify(G.catNames)};
+const catColors=${JSON.stringify(catColors)};
+const catTotals=${JSON.stringify(catTotals)};
+const catOpens=${JSON.stringify(catOpens)};
+const catClosedArr=${JSON.stringify(catClosed)};
+const catEl = document.getElementById('catChart');
+const catCI = new Chart(catEl, {
+  type:'bar',
+  data:{labels:catNames, datasets:[{data:catTotals, backgroundColor:catColors, borderRadius:5, borderSkipped:false}]},
+  options:{
+    indexAxis:'y', responsive:true,
+    plugins:{legend:{display:false}, tooltip:{callbacks:{label: ctx => ' ' + ctx.raw + ' tickets — click to explore'}}},
+    scales:{x:{beginAtZero:true, grid:{color:'#1a1e28'}, ticks:{color:'#6b7280'}}, y:{grid:{display:false}, ticks:{color:'#e8eaf0', font:{family:'DM Mono',size:11}}, afterFit(s){s.width=160;}}},
+    onClick(e){
+      const pts=catCI.getElementsAtEventForMode(e,'nearest',{intersect:true},false);
+      if(pts.length) scrollToCat(catCI.data.labels[pts[0].index]);
+    },
+    onHover(e){
+      const pts=catCI.getElementsAtEventForMode(e,'nearest',{intersect:true},false);
+      catEl.style.cursor=pts.length?'pointer':'default';
+    }
+  }
+});
+new Chart(document.getElementById('openChart'),{
+  type:'bar',
+  data:{labels:catNames, datasets:[{label:'Open',data:catOpens,backgroundColor:'rgba(239,68,68,.8)',borderRadius:3},{label:'Closed',data:catClosedArr,backgroundColor:'rgba(99,102,241,.4)',borderRadius:3}]},
+  options:{
+    indexAxis:'y', responsive:true,
+    plugins:{legend:{labels:{color:'#6b7280',font:{size:11}}}},
+    scales:{x:{stacked:true,beginAtZero:true,grid:{color:'#1a1e28'},ticks:{color:'#6b7280'}},y:{stacked:true,grid:{display:false},ticks:{color:'#e8eaf0',font:{family:'DM Mono',size:11}},afterFit(s){s.width=160;}}}
+  }
+});`;
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SpiderAds — ${boardLabel} Report · ${fmtD(G.from)}</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"><\/script>
+<style>${css}</style>
 </head>
 <body>
+
 <nav>
   <div class="nav-brand">Spider<em>Ads</em> Report</div>
   <div class="nav-links">
@@ -1710,13 +1820,13 @@ footer{text-align:center;color:var(--muted);font-size:.63rem;font-family:var(--m
     <a href="#insights">Insights</a>
     <a href="#drilldown">Drill-down</a>
   </div>
-  <div class="nav-meta">${dateLabel} · ${boardLabel}</div>
+  <div class="nav-meta">${dateLabel} · ${boardLabel}${aiNote}</div>
 </nav>
 
 <div class="hero" id="overview">
   <div class="hero-eyebrow">${G.project} · ${G.org} · ${boardLabel}</div>
   <h1>${G.total.toLocaleString()} Tickets —<br><em>${boardLabel} Analysis</em></h1>
-  <p class="hero-sub">${dateLabel} · ${G.catNames.length} categories · ${G.total - G.open} resolved · ${G.open} still open${aiNote}</p>
+  <p class="hero-sub">${dateLabel} · ${G.catNames.length} categories · ${G.total - G.open} resolved · ${G.open} still open${aiNote ? ' · AI-assisted classification' : ''}</p>
 </div>
 
 <div class="kpi-strip">
@@ -1731,9 +1841,17 @@ footer{text-align:center;color:var(--muted);font-size:.63rem;font-family:var(--m
 </div>
 
 <div class="main">
+
   <div class="charts-row">
-    <div class="cc"><h3>Volume by Category</h3><canvas id="catChart" height="300"></canvas></div>
-    <div class="cc"><h3>Open vs Closed by Category</h3><canvas id="openChart" height="300"></canvas></div>
+    <div class="cc">
+      <h3>Volume by Category</h3>
+      <canvas id="catChart" height="300"></canvas>
+      <div class="chart-hint">↑ Click any bar to jump to that category's drill-down</div>
+    </div>
+    <div class="cc">
+      <h3>Open vs Closed by Category</h3>
+      <canvas id="openChart" height="300"></canvas>
+    </div>
   </div>
 
   <div class="ins-section" id="insights">
@@ -1747,28 +1865,21 @@ footer{text-align:center;color:var(--muted);font-size:.63rem;font-family:var(--m
     <div class="sec-title">All Categories &amp; Tickets</div>
     <div class="cat-list">${accHtml}</div>
   </div>
-</div>
-<footer>SpiderAds Report · Generated ${new Date(G.generatedAt).toLocaleString()} · ${G.org}/${G.project}</footer>
 
-<script>
-Chart.defaults.color='#6b7280';Chart.defaults.borderColor='#252933';
-const catNames=${JSON.stringify(G.catNames)};
-const catColors=${JSON.stringify(catColors)};
-const catTotals=${JSON.stringify(catTotals)};
-const catOpens=${JSON.stringify(catOpens)};
-const catClosed=${JSON.stringify(catClosed)};
-new Chart(document.getElementById('catChart'),{type:'bar',data:{labels:catNames,datasets:[{data:catTotals,backgroundColor:catColors,borderRadius:4,borderSkipped:false}]},options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{color:'#252933'},ticks:{color:'#6b7280'}},y:{grid:{display:false},ticks:{color:'#e8eaf0',font:{size:11}}}}}});
-new Chart(document.getElementById('openChart'),{type:'bar',data:{labels:catNames,datasets:[{label:'Open',data:catOpens,backgroundColor:'rgba(239,68,68,.75)',borderRadius:3},{label:'Closed',data:catClosed,backgroundColor:'rgba(99,102,241,.4)',borderRadius:3}]},options:{indexAxis:'y',responsive:true,plugins:{legend:{labels:{color:'#6b7280',font:{size:11}}}},scales:{x:{stacked:true,grid:{color:'#252933'},ticks:{color:'#6b7280'}},y:{stacked:true,grid:{display:false},ticks:{color:'#e8eaf0',font:{size:11}}}}}});
-<\/script>
+</div>
+
+<footer>SpiderAds Report &nbsp;·&nbsp; Generated ${new Date(G.generatedAt).toLocaleString()} &nbsp;·&nbsp; ${G.org}/${G.project} &nbsp;·&nbsp; ${G.total} tickets across ${G.catNames.length} categories</footer>
+
+<script>${reportJs}<\/script>
 </body>
 </html>`;
 
-  const ts = new Date().toISOString().slice(0,10);
-  const fname = `spiderads-report-${G.project.toLowerCase()}-${ts}.html`;
-  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = fname;
+  const ts    = new Date().toISOString().slice(0,10);
+  const fname = `spiderads-${G.project.toLowerCase()}-${boardLabel.toLowerCase().replace(/[^a-z0-9]+/g,'-')}-${ts}.html`;
+  const blob  = new Blob([html], { type:'text/html;charset=utf-8' });
+  const a     = document.createElement('a');
+  a.href      = URL.createObjectURL(blob);
+  a.download  = fname;
   a.click();
   URL.revokeObjectURL(a.href);
 }
