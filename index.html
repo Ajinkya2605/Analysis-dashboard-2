@@ -31,14 +31,7 @@ nav {
 .nav-links { display:flex; gap:4px; }
 .nav-links a { color:var(--muted); text-decoration:none; font-size:.78rem; font-weight:500; padding:5px 11px; border-radius:6px; transition:all .15s; }
 .nav-links a:hover { color:var(--text); background:var(--surface2); }
-.nav-status { font-size:.7rem; font-family:var(--mono); display:flex; align-items:center; gap:6px; }
-.sdot { width:7px; height:7px; border-radius:50%; background:var(--muted); flex-shrink:0; }
-.sdot.live { background:var(--green); box-shadow:0 0 6px rgba(16,185,129,.5); animation:pulse 2s infinite; }
-.sdot.err  { background:var(--red); }
-.sdot.busy { background:var(--amber); animation:pulse .9s infinite; }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
-.nav-btn { padding:5px 12px; background:transparent; border:1px solid var(--border); border-radius:6px; color:var(--muted); font-size:.72rem; font-family:var(--mono); cursor:pointer; transition:all .15s; }
-.nav-btn:hover { border-color:var(--accent); color:var(--accent); }
 
 /* LOADING BAR */
 .lb { height:2px; background:var(--border); overflow:hidden; }
@@ -324,24 +317,54 @@ nav {
 
 footer { text-align:center; color:var(--muted); font-size:.64rem; font-family:var(--mono); padding:20px; border-top:1px solid var(--border); }
 .hidden { display:none!important; }
+
+/* NAV BRAND GROUP */
+.nav-brand-group { display:flex; align-items:center; gap:8px; }
+.nav-dot { width:8px; height:8px; border-radius:50%; background:var(--muted); flex-shrink:0; transition:background .3s; }
+.nav-dot.live { background:var(--green); box-shadow:0 0 5px rgba(16,185,129,.5); }
+.nav-dot.err  { background:var(--red); }
+.nav-dot.busy { background:var(--amber); animation:pulse .9s infinite; }
+.ai-ind { font-size:.7rem; color:var(--purple); line-height:1; opacity:0; transition:opacity .2s; pointer-events:none; }
+.ai-ind.on { opacity:1; }
+
+/* HOW button — small ? icon */
+.btn-how {
+  width:28px; height:28px; border-radius:50%;
+  background:transparent; border:1px solid var(--border);
+  color:var(--muted); font-size:.82rem; font-weight:700;
+  cursor:pointer; display:flex; align-items:center; justify-content:center;
+  transition:all .15s; flex-shrink:0;
+}
+.btn-how:hover { border-color:var(--accent); color:var(--accent); }
+
+/* SAVE REPORT button */
+.btn-save {
+  padding:5px 13px; background:transparent;
+  border:1px solid var(--border); border-radius:6px;
+  color:var(--muted); font-size:.72rem; font-family:var(--mono);
+  cursor:pointer; transition:all .15s; white-space:nowrap;
+  display:flex; align-items:center; gap:5px;
+}
+.btn-save:hover { border-color:var(--green); color:var(--green); }
 </style>
 </head>
 <body>
 
 <!-- NAV -->
 <nav>
-  <div class="nav-brand">Spider<em>Ads</em></div>
+  <div class="nav-brand-group">
+    <div class="nav-brand">Spider<em>Ads</em></div>
+    <div class="nav-dot" id="sDot" title="Not connected"></div>
+    <span class="ai-ind" id="aiIndicator" title="AI layer active">✦</span>
+  </div>
   <div class="nav-links hidden" id="navLinks">
     <a href="#kpis">Overview</a>
     <a href="#insights">Insights</a>
     <a href="#drilldown">Drill-down</a>
   </div>
   <div class="nav-right">
-    <button class="nav-btn" onclick="openHow()">⚙ How it works</button>
-    <div class="nav-status">
-      <div class="sdot" id="sDot"></div>
-      <span id="sTxt" style="color:var(--muted)">Not connected</span>
-    </div>
+    <button class="btn-save hidden" id="saveBtn" onclick="saveReport()">↓ Save Report</button>
+    <button class="btn-how" onclick="openHow()" title="How it works">?</button>
   </div>
 </nav>
 <div class="lb"><div class="lb-i" id="lb"></div></div>
@@ -546,9 +569,15 @@ footer { text-align:center; color:var(--muted); font-size:.64rem; font-family:va
 
       <hr class="hd">
       <div class="dsec">
-        <h3>3 · Board-Aware Categorisation</h3>
-        <p>Tickets are categorised using <b>title + description</b> keyword rules. What makes this board-aware is that the category list is <b>filtered to only show categories that actually appear in the data</b> — so a Features board will only show feature-relevant categories, while a Maintenance board shows maintenance-specific ones.</p>
-        <p>Rules are checked top to bottom. First match wins. The full rule set:</p>
+        <h3>3 · Scoring Engine — Not First-Match-Wins</h3>
+        <p>Unlike simple rule lists, this dashboard uses a <b>4-level scoring engine</b> to determine the best category for each ticket:</p>
+        <ul>
+          <li><b>Level 1 — Work Item Type</b>: Direct type matches (e.g. <code>Spindling</code> → Spider & Data Source) score highest and override all other signals.</li>
+          <li><b>Level 2 — Tags</b>: Azure DevOps tags are checked against a dedicated tag map. A tag match scores higher than keyword matches.</li>
+          <li><b>Level 3 — Title keywords</b>: A title match scores <b>3 points</b> per matching rule.</li>
+          <li><b>Level 4 — Description keywords</b>: A description match scores <b>1 point</b>. Multiple rules can score simultaneously — the highest total wins.</li>
+        </ul>
+        <p>Only categories that actually appear in the fetched data are shown — so a Features board looks different from a Maintenance board.</p>
         <table class="rule-tbl">
           <thead><tr><th>Category</th><th>Keywords matched in title + description</th></tr></thead>
           <tbody id="ruleTbody"></tbody>
@@ -557,13 +586,54 @@ footer { text-align:center; color:var(--muted); font-size:.64rem; font-family:va
 
       <hr class="hd">
       <div class="dsec">
-        <h3>4 · Auto-Generated Insights</h3>
+        <h3>4 · Swedish &amp; Bilingual Support</h3>
+        <p>SpiderAds workflows use Swedish terminology for client onboarding and internal operations. The keyword rules cover both languages natively:</p>
+        <ul>
+          <li><code>kampanj</code> → Campaign &amp; Ad Management</li>
+          <li><code>annonsmall</code> → Creatives &amp; Templates (Ad Template sub-area)</li>
+          <li><code>periodsbudget</code>, <code>kostnadsställe</code> → Invoicing &amp; Billing</li>
+          <li><code>prospectkälla</code>, <code>spindel</code> → Spider &amp; Data Source</li>
+          <li><code>kund skapad</code>, <code>beställning</code>, <code>bekräfta</code>, <code>uppstart</code> → Prospect &amp; Order Flow</li>
+          <li><code>bildbank</code>, <code>korr godkänd</code> → Creatives &amp; Templates</li>
+          <li><code>geostyrning</code>, <code>bid strategi</code> → Campaign &amp; Ad Management</li>
+        </ul>
+        <p>This reduced the "Other" bucket from <b>48% → 7.3%</b> (an 85% reduction in unclassified tickets).</p>
+      </div>
+
+      <hr class="hd">
+      <div class="dsec">
+        <h3>5 · AI Fallback Layer (Claude Haiku)</h3>
+        <p>After keyword rules run, any tickets still classified as <b>"Other"</b> can optionally be sent to <b>Claude Haiku</b> for AI-assisted classification. Click the <b>✦ AI Analyse</b> button and enter your Claude API key to activate.</p>
+        <ul>
+          <li>Only "Other" tickets are sent — not the full dataset</li>
+          <li>Each ticket sends only: <code>id</code>, <code>title</code> (90 chars), <code>type</code> — no descriptions</li>
+          <li>Batched at 200 tickets per API call for efficiency</li>
+          <li>Cost: ~$0.001 per full run · $5 free credits = ~5,000 runs</li>
+          <li>AI-classified tickets are marked with a <span style="color:#a855f7">✦</span> indicator in drill-down views</li>
+        </ul>
+      </div>
+
+      <hr class="hd">
+      <div class="dsec">
+        <h3>6 · Save Report</h3>
+        <p>After running an analysis, click <b>↓ Save Report</b> (top right) to download a fully self-contained interactive HTML file. The report includes:</p>
+        <ul>
+          <li>All KPIs, charts (Volume by Category, Open vs Closed)</li>
+          <li>Key Findings insights panel</li>
+          <li>Full drill-down with all categories, sub-areas, and individual tickets with clickable Azure DevOps links</li>
+          <li>Works offline — no server required</li>
+        </ul>
+      </div>
+
+      <hr class="hd">
+      <div class="dsec">
+        <h3>7 · Auto-Generated Insights</h3>
         <p>After categorisation the dashboard computes pattern findings from the actual numbers — highest volume, worst open rate, highest bug rate, manual ops burden, and resolution speed. No external API needed.</p>
       </div>
 
       <hr class="hd">
       <div class="dsec">
-        <h3>5 · KPI Definitions</h3>
+        <h3>8 · KPI Definitions</h3>
         <ul>
           <li><b>Open</b> — State not in: Closed, Resolved, Done</li>
           <li><b>Bugs</b> — Work Item Type contains Bug, Spider bug, or Defect</li>
@@ -846,6 +916,7 @@ function getSubArea(catName, title, desc) {
 // ══════════════════════════════════════════════════
 const S = { org:'bifirm', project:'SpiderAds', pat:'', claudeKey:'' };
 let catCI=null, openCI=null;
+let G = {}; // last analysis snapshot for Save Report
 
 // ══════════════════════════════════════════════════
 // INIT
@@ -1232,6 +1303,15 @@ function renderAll(tickets, categories, insights, from, to, area) {
   document.getElementById('footerBar').textContent =
     `SpiderAds · ${S.org}/${S.project} · ${area||'All boards'} · ${total} tickets · ${fmtD(from)} – ${fmtD(to)} · ${new Date().toLocaleTimeString()}`;
 
+  // Store snapshot for Save Report
+  G = { tickets, categories, flatCats, catNames, insights,
+        total, bugs, manual, open, closed, from, to, area,
+        avg: cnt?(totD/cnt).toFixed(1):'—',
+        aiUsed: !!S.claudeKey,
+        org: S.org, project: S.project,
+        generatedAt: new Date().toISOString() };
+  document.getElementById('saveBtn').classList.remove('hidden');
+
   renderCharts(flatCats, catNames);
   renderInsights(insights);
   renderAccordion(categories, catNames);
@@ -1436,6 +1516,9 @@ function disconnect() {
   document.getElementById('connectErr').style.display = 'none';
   S.claudeKey = '';
   document.getElementById('aiBtn').classList.remove('active');
+  document.getElementById('aiIndicator').classList.remove('on');
+  document.getElementById('saveBtn').classList.add('hidden');
+  G = {};
   setStatus('idle');
 }
 
@@ -1472,9 +1555,219 @@ async function runAIAnalysis() {
   }
   S.claudeKey = key;
   document.getElementById('aiBtn').classList.add('active');
+  document.getElementById('aiIndicator').classList.add('on');
   closeAIModDirect();
   // Run full analysis with AI enabled
   runAnalysis();
+}
+
+// ══════════════════════════════════════════════════
+// SAVE REPORT
+// ══════════════════════════════════════════════════
+function saveReport() {
+  if (!G.tickets || !G.tickets.length) return;
+
+  const fmtD = d => new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+  const dateLabel = `${fmtD(G.from)} – ${fmtD(G.to)}`;
+  const boardLabel = G.area ? G.area.split('\\').pop() : 'All Boards';
+  const aiNote = G.aiUsed ? ' · AI-assisted classification enabled' : '';
+
+  // Chart data
+  const catColors = G.catNames.map(c => catColor(c));
+  const catTotals = G.catNames.map(c => G.flatCats[c].length);
+  const catOpens  = G.catNames.map(c => G.flatCats[c].filter(t => isOpen(t.state)).length);
+  const catClosed = G.catNames.map(c => G.flatCats[c].filter(t => !isOpen(t.state)).length);
+
+  // Insights HTML
+  const insHtml = G.insights.map(i => `
+    <div class="ins-card ${i.level}">
+      <div class="ins-lbl">${i.label}</div>
+      <div class="ins-txt">${i.text}</div>
+    </div>`).join('');
+
+  // Accordion HTML — categories + sub-areas + tickets
+  const pct = (a,b) => b ? Math.round(a/b*100) : 0;
+  const accHtml = G.catNames.map(cat => {
+    const subs = G.categories[cat];
+    const allT = G.flatCats[cat];
+    const col  = catColor(cat);
+    const open = allT.filter(t=>isOpen(t.state)).length;
+    const bugs = allT.filter(t=>isBug(t.type)).length;
+    const subHtml = Object.entries(subs).map(([subName, tix]) => {
+      const sOpen = tix.filter(t=>isOpen(t.state)).length;
+      const tRows = tix.map(t => {
+        const stCls = isOpen(t.state)?'so':'sc';
+        const aiMark = t.aiCat ? ' <span style="color:#a855f7;font-size:.58rem">✦AI</span>' : '';
+        return `<div class="t-row">
+          <a class="tid" href="https://dev.azure.com/${G.org}/${G.project}/_workitems/edit/${t.id}" target="_blank">#${t.id}</a>
+          <span class="ttl">${t.title.slice(0,90)}${aiMark}</span>
+          <span class="ttype">${t.type}</span>
+          <span class="tst ${stCls}">${t.state}</span>
+        </div>`;
+      }).join('');
+      return `<div class="sub-area">
+        <div class="sub-hdr">
+          <span class="sub-dot" style="background:${col}"></span>
+          <span class="sub-nm">${subName}</span>
+          <span class="sub-pill">${tix.length} tickets</span>
+          ${sOpen ? `<span class="sub-pill op">${sOpen} open</span>` : ''}
+        </div>
+        <div class="sub-body">${tRows}</div>
+      </div>`;
+    }).join('');
+    return `<div class="cat-card">
+      <div class="cat-hdr">
+        <div class="cat-bar" style="background:${col}"></div>
+        <div class="cat-inf">
+          <div class="cat-nm">${cat}</div>
+          <div class="cat-meta">${allT.length} tickets · ${Object.keys(subs).length} sub-areas · ${pct(bugs,allT.length)}% bug rate</div>
+        </div>
+        <span class="pill">${allT.length}</span>
+        ${bugs ? `<span class="pill bg">${bugs} bugs</span>` : ''}
+        ${open ? `<span class="pill op">${open} open</span>` : ''}
+      </div>
+      ${subHtml}
+    </div>`;
+  }).join('');
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SpiderAds Report — ${boardLabel} · ${fmtD(G.from)}</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"><\/script>
+<style>
+:root{--bg:#0d0f14;--surface:#13161e;--surface2:#1a1e28;--border:#252933;--text:#e8eaf0;--muted:#6b7280;--accent:#6366f1;--red:#ef4444;--amber:#f59e0b;--green:#10b981;--blue:#3b82f6;--purple:#a855f7;--font:'DM Sans',sans-serif;--mono:'DM Mono',monospace;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14px;line-height:1.6;min-height:100vh;}
+nav{position:sticky;top:0;z-index:100;background:rgba(13,15,20,.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 32px;height:56px;}
+.nav-brand{font-weight:800;font-size:1.05rem;letter-spacing:-.3px;}.nav-brand em{color:var(--accent);font-style:normal;}
+.nav-links{display:flex;gap:4px;}.nav-links a{color:var(--muted);text-decoration:none;font-size:.78rem;font-weight:500;padding:5px 11px;border-radius:6px;transition:all .15s;}.nav-links a:hover{color:var(--text);background:var(--surface2);}
+.nav-meta{font-size:.7rem;color:var(--muted);font-family:var(--mono);}
+.hero{padding:48px 40px 40px;border-bottom:1px solid var(--border);position:relative;overflow:hidden;}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 600px 300px at 80% 50%,rgba(99,102,241,.07),transparent);pointer-events:none;}
+.hero-eyebrow{font-family:var(--mono);font-size:.68rem;color:var(--accent);letter-spacing:1.8px;text-transform:uppercase;margin-bottom:10px;}
+.hero h1{font-size:2rem;font-weight:700;letter-spacing:-.5px;line-height:1.2;margin-bottom:8px;}
+.hero h1 em{color:var(--accent);font-style:normal;}
+.hero-sub{color:var(--muted);font-size:.85rem;max-width:560px;line-height:1.7;}
+.kpi-strip{display:grid;grid-template-columns:repeat(8,1fr);border-bottom:1px solid var(--border);}
+.kpi-item{padding:18px 12px;border-right:1px solid var(--border);text-align:center;}.kpi-item:last-child{border-right:none;}
+.kv{font-size:1.5rem;font-weight:700;letter-spacing:-1px;line-height:1;font-family:var(--mono);}
+.kv.acc{color:var(--accent);}.kv.red{color:var(--red);}.kv.amb{color:var(--amber);}.kv.grn{color:var(--green);}.kv.blu{color:var(--blue);}.kv.pur{color:var(--purple);}
+.kl{font-size:.58rem;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:.8px;}
+.main{max-width:1500px;margin:0 auto;padding:28px 32px;}
+.sec-lbl{font-family:var(--mono);font-size:.62rem;color:var(--accent);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;}
+.sec-title{font-size:.95rem;font-weight:700;letter-spacing:-.3px;margin-bottom:14px;}
+.charts-row{display:grid;grid-template-columns:1.5fr 1fr;gap:14px;margin-bottom:24px;}
+.cc{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 20px;}
+.cc h3{font-size:.7rem;font-weight:600;color:var(--muted);margin-bottom:12px;text-transform:uppercase;letter-spacing:.6px;font-family:var(--mono);}
+.ins-section{margin-bottom:24px;}
+.ins-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;}
+.ins-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:13px 15px;}
+.ins-card.p1{border-left:3px solid var(--red);}.ins-card.p2{border-left:3px solid var(--amber);}.ins-card.p3{border-left:3px solid var(--blue);}.ins-card.p4{border-left:3px solid var(--green);}
+.ins-lbl{font-size:.6rem;font-family:var(--mono);font-weight:600;text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px;}
+.ins-card.p1 .ins-lbl{color:var(--red);}.ins-card.p2 .ins-lbl{color:var(--amber);}.ins-card.p3 .ins-lbl{color:var(--blue);}.ins-card.p4 .ins-lbl{color:var(--green);}
+.ins-txt{font-size:.77rem;line-height:1.65;color:var(--text);}
+.drill{margin-bottom:24px;}
+.cat-list{display:flex;flex-direction:column;gap:8px;}
+.cat-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.cat-hdr{display:flex;align-items:center;gap:13px;padding:12px 16px;background:var(--surface);}
+.cat-bar{width:4px;height:28px;border-radius:2px;flex-shrink:0;}
+.cat-inf{flex:1;min-width:0;}
+.cat-nm{font-weight:600;font-size:.85rem;}
+.cat-meta{font-size:.67rem;color:var(--muted);margin-top:1px;}
+.pill{font-size:.6rem;font-family:var(--mono);padding:2px 7px;border-radius:20px;border:1px solid var(--border);color:var(--muted);white-space:nowrap;}
+.pill.op{background:rgba(239,68,68,.1);color:var(--red);border-color:rgba(239,68,68,.2);}
+.pill.bg{background:rgba(245,158,11,.08);color:var(--amber);border-color:rgba(245,158,11,.15);}
+.sub-area{border-top:1px solid var(--border);}
+.sub-hdr{display:flex;align-items:center;gap:9px;padding:8px 16px;background:var(--surface2);}
+.sub-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.sub-nm{font-size:.79rem;font-weight:600;flex:1;min-width:0;}
+.sub-pill{font-size:.59rem;font-family:var(--mono);padding:2px 6px;border-radius:12px;border:1px solid var(--border);color:var(--muted);white-space:nowrap;}
+.sub-pill.op{background:rgba(239,68,68,.1);color:var(--red);border-color:rgba(239,68,68,.2);}
+.sub-body{border-top:1px solid var(--border);}
+.t-row{display:flex;align-items:baseline;gap:10px;padding:5px 16px;transition:background .1s;}
+.t-row:hover{background:rgba(255,255,255,.02);}
+.tid{font-family:var(--mono);font-size:.67rem;color:var(--accent);text-decoration:none;white-space:nowrap;}
+.tid:hover{text-decoration:underline;}
+.ttl{font-size:.74rem;flex:1;min-width:0;}
+.ttype{font-size:.62rem;color:var(--muted);white-space:nowrap;}
+.tst{font-size:.62rem;font-weight:600;white-space:nowrap;font-family:var(--mono);}
+.sc{color:var(--green);}.so{color:var(--red);}
+footer{text-align:center;color:var(--muted);font-size:.63rem;font-family:var(--mono);padding:20px;border-top:1px solid var(--border);}
+</style>
+</head>
+<body>
+<nav>
+  <div class="nav-brand">Spider<em>Ads</em> Report</div>
+  <div class="nav-links">
+    <a href="#overview">Overview</a>
+    <a href="#insights">Insights</a>
+    <a href="#drilldown">Drill-down</a>
+  </div>
+  <div class="nav-meta">${dateLabel} · ${boardLabel}</div>
+</nav>
+
+<div class="hero" id="overview">
+  <div class="hero-eyebrow">${G.project} · ${G.org} · ${boardLabel}</div>
+  <h1>${G.total.toLocaleString()} Tickets —<br><em>${boardLabel} Analysis</em></h1>
+  <p class="hero-sub">${dateLabel} · ${G.catNames.length} categories · ${G.total - G.open} resolved · ${G.open} still open${aiNote}</p>
+</div>
+
+<div class="kpi-strip">
+  <div class="kpi-item"><div class="kv acc">${G.total}</div><div class="kl">Total Tickets</div></div>
+  <div class="kpi-item"><div class="kv red">${G.bugs}</div><div class="kl">Bugs</div></div>
+  <div class="kpi-item"><div class="kv amb">${G.manual}</div><div class="kl">Manual Ops</div></div>
+  <div class="kpi-item"><div class="kv red">${G.open}</div><div class="kl">Still Open</div></div>
+  <div class="kpi-item"><div class="kv grn">${G.closed}</div><div class="kl">Resolved</div></div>
+  <div class="kpi-item"><div class="kv blu">${G.catNames.length}</div><div class="kl">Categories</div></div>
+  <div class="kpi-item"><div class="kv">${G.avg}</div><div class="kl">Avg Days Close</div></div>
+  <div class="kpi-item"><div class="kv pur">${G.aiUsed ? '✦ On' : 'Off'}</div><div class="kl">AI Layer</div></div>
+</div>
+
+<div class="main">
+  <div class="charts-row">
+    <div class="cc"><h3>Volume by Category</h3><canvas id="catChart" height="300"></canvas></div>
+    <div class="cc"><h3>Open vs Closed by Category</h3><canvas id="openChart" height="300"></canvas></div>
+  </div>
+
+  <div class="ins-section" id="insights">
+    <div class="sec-lbl">Pattern Analysis</div>
+    <div class="sec-title">Key Findings</div>
+    <div class="ins-grid">${insHtml}</div>
+  </div>
+
+  <div class="drill" id="drilldown">
+    <div class="sec-lbl">Deep Dive</div>
+    <div class="sec-title">All Categories &amp; Tickets</div>
+    <div class="cat-list">${accHtml}</div>
+  </div>
+</div>
+<footer>SpiderAds Report · Generated ${new Date(G.generatedAt).toLocaleString()} · ${G.org}/${G.project}</footer>
+
+<script>
+Chart.defaults.color='#6b7280';Chart.defaults.borderColor='#252933';
+const catNames=${JSON.stringify(G.catNames)};
+const catColors=${JSON.stringify(catColors)};
+const catTotals=${JSON.stringify(catTotals)};
+const catOpens=${JSON.stringify(catOpens)};
+const catClosed=${JSON.stringify(catClosed)};
+new Chart(document.getElementById('catChart'),{type:'bar',data:{labels:catNames,datasets:[{data:catTotals,backgroundColor:catColors,borderRadius:4,borderSkipped:false}]},options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{color:'#252933'},ticks:{color:'#6b7280'}},y:{grid:{display:false},ticks:{color:'#e8eaf0',font:{size:11}}}}}});
+new Chart(document.getElementById('openChart'),{type:'bar',data:{labels:catNames,datasets:[{label:'Open',data:catOpens,backgroundColor:'rgba(239,68,68,.75)',borderRadius:3},{label:'Closed',data:catClosed,backgroundColor:'rgba(99,102,241,.4)',borderRadius:3}]},options:{indexAxis:'y',responsive:true,plugins:{legend:{labels:{color:'#6b7280',font:{size:11}}}},scales:{x:{stacked:true,grid:{color:'#252933'},ticks:{color:'#6b7280'}},y:{stacked:true,grid:{display:false},ticks:{color:'#e8eaf0',font:{size:11}}}}}});
+<\/script>
+</body>
+</html>`;
+
+  const ts = new Date().toISOString().slice(0,10);
+  const fname = `spiderads-report-${G.project.toLowerCase()}-${ts}.html`;
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = fname;
+  a.click();
+  URL.revokeObjectURL(a.href);
 }
 
 // ══════════════════════════════════════════════════
@@ -1493,11 +1786,10 @@ function showDashErr(m) { const e=document.getElementById('dashErr'); e.textCont
 function hideDashErr()  { document.getElementById('dashErr').classList.add('hidden'); }
 
 function setStatus(s) {
-  const d=document.getElementById('sDot'), t=document.getElementById('sTxt');
-  d.className = 'sdot'+(s==='live'?' live':s==='err'?' err':s==='busy'?' busy':'');
-  const m={live:['Connected','var(--green)'],err:['Error','var(--red)'],busy:['Analysing…','var(--amber)'],idle:['Not connected','var(--muted)']};
-  const [txt,col] = m[s]||m.idle;
-  t.textContent=txt; t.style.color=col;
+  const d = document.getElementById('sDot');
+  d.className = 'nav-dot'+(s==='live'?' live':s==='err'?' err':s==='busy'?' busy':'');
+  const titles = {live:'Connected',err:'Connection error',busy:'Analysing…',idle:'Not connected'};
+  d.title = titles[s]||'Not connected';
 }
 function setProgress(step, sub, log) {
   document.getElementById('progFill').style.width = `${Math.round((step/3)*100)}%`;
